@@ -190,6 +190,11 @@ export class Camera {
       this.instance.position.y += this.swipeVelocityY * 0.35;
       this.swipeVelocityX *= 0.82;
       this.swipeVelocityY *= 0.82;
+
+      if (Math.abs(this.swipeVelocityX) < 0.0005 && Math.abs(this.swipeVelocityY) < 0.0005) {
+        this.swipeVelocityX = 0;
+        this.swipeVelocityY = 0;
+      }
     } else if (hasGyroInput && !this.isUserDragging) {
       this.currentRotationX += (this.targetRotationX - this.currentRotationX) * 0.12;
       this.currentRotationY += (this.targetRotationY - this.currentRotationY) * 0.12;

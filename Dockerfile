@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PHP_OPCACHE_VALIDATE_TIMESTAMPS="0" \
     PHP_OPCACHE_ENABLE="1"
 
-# 1. Installazione pacchetti di sistema necessari
+# 1. Installazione pacchetti di sistema di base
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Configurazione e installazione estensioni PHP corrette per la versione 8.2
+# 2. Configurazione e installazione estensioni PHP (inclusi gd e imap corretti)
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
     && docker-php-ext-install -j$(nproc) \
@@ -52,7 +52,7 @@ RUN curl -sL https://deb.nodesource.com/setup_20.x | bash - \
 
 WORKDIR /var/www/html
 
-# 5. Copia dei file delle dipendenze per sfruttare la cache di Docker
+# 5. Copia dei file delle dipendenze
 COPY composer.json composer.lock ./
 COPY package.json package-lock.json ./
 
@@ -63,7 +63,7 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
 # 7. Copia del resto del codice sorgente
 COPY . .
 
-# 8. Build del frontend Vite, ottimizzazioni Laravel e permessi
+# 8. Build del frontend, ottimizzazioni Laravel e permessi
 RUN npm run build \
     && php artisan optimize:clear \
     && php artisan optimize \

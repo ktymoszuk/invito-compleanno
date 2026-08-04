@@ -14,6 +14,11 @@ if [ ! -f .env ]; then
     cp .env.example .env || true
 fi
 
+# Se siamo in produzione, usa il file di configurazione HTTPS
+if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "prod" ]; then
+    cp /var/www/html/.env.production /var/www/html/.env 2>/dev/null || true
+fi
+
 # Genera APP_KEY se assente
 if ! grep -q '^APP_KEY=' .env || [ -z "$(grep '^APP_KEY=' .env | cut -d= -f2-)" ]; then
     php artisan key:generate --force || true

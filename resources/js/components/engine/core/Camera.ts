@@ -9,10 +9,10 @@ export class Camera {
   private hasOrientationPermission = false;
   private orientationActive = false;
   
-  // Posizionata nell'angolo in fondo a destra
-  private defaultPosition = new THREE.Vector3(1.2, 1.7, -2.5);
-  // Punta verso l'angolo opposto, leggermente spostata verso il centro
-  private initialTarget = new THREE.Vector3(2.5, 1.35, -4.5);
+  // Posizionata nell'angolo opposto (dall'altra parte della stanza)
+  private defaultPosition = new THREE.Vector3(-2.5, 1.7, 4.5);
+  // Punta verso la direzione corretta (angolo in fondo a destra, leggermente spostata verso il centro)
+  private initialTarget = new THREE.Vector3(1.2, 1.35, -2.5);
   
   private fallbackAngle = 0;
   private lastUserInteraction = 0;

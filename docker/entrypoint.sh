@@ -6,6 +6,9 @@ cd /var/www/html
 # Crea il DB SQLite se non esiste
 touch database/database.sqlite
 
+# Assicura le directory di storage richieste da Laravel
+mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions storage/app/public storage/app/private storage/logs bootstrap/cache
+
 # Crea un .env minimo se non esiste
 if [ ! -f .env ]; then
     cp .env.example .env || true

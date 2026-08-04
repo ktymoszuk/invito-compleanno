@@ -12,6 +12,12 @@ export class Camera {
   private currentRotationX = 0;
   private currentRotationY = 0;
   private hasOrientationPermission = false;
+  private orientationActive = false;
+  private initialRadius = 4.9;
+  private initialHeight = 1.7;
+  private initialTarget = new THREE.Vector3(-0.2, 1.4, 0);
+  private defaultPosition = new THREE.Vector3(0.8, 1.7, 4.6);
+  private fallbackAngle = 0;
 
   constructor(private sizes: Sizes, private domElement: HTMLElement) {
     this.setInstance();
@@ -27,7 +33,7 @@ export class Camera {
       100
     );
 
-    this.instance.position.set(0, 1.7, 4.9);
+    this.instance.position.copy(this.defaultPosition);
   }
 
   private setControls() {
@@ -39,8 +45,8 @@ export class Camera {
     this.controls.minDistance = 2.5; // Distanza minima per non entrare troppo nei dettagli
     this.controls.maxDistance = 7.0; // Distanza massima per non uscire dalla stanza
 
-    // Ruotiamo leggermente il target verso la scritta
-    this.controls.target.set(-0.6, 1.7, 0);
+    // Il target punta verso la console del DJ, con una vista più ampia e meno centrale.
+    this.controls.target.copy(this.initialTarget);
 
     this.controls.minAzimuthAngle = -Math.PI / 3;
     this.controls.maxAzimuthAngle = Math.PI / 3;
@@ -52,34 +58,52 @@ export class Camera {
   }
 
   private initOrientation() {
-    if (window.DeviceOrientationEvent) {
-      const handleOrientation = (event: DeviceOrientationEvent) => {
-        if (event.gamma !== null && event.beta !== null) {
-          this.targetRotationY = (event.gamma * Math.PI) / 180 * 0.25;
-          this.targetRotationX = ((event.beta - 45) * Math.PI) / 180 * 0.25;
-        }
-      };
+    if (typeof window === 'undefined' || typeof window.DeviceOrientationEvent === 'undefined') {
+      return;
+    }
 
-      // Gestione permessi per iOS 13+
-      if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-        const requestAudioPermission = () => {
-          (DeviceOrientationEvent as any).requestPermission()
-            .then((response: string) => {
-              if (response === 'granted') {
-                window.addEventListener('deviceorientation', handleOrientation);
-                this.hasOrientationPermission = true;
-              }
-            })
-            .catch(console.error);
-          window.removeEventListener('click', requestAudioPermission);
-          window.removeEventListener('touchend', requestAudioPermission);
-        };
-
-        window.addEventListener('click', requestAudioPermission);
-        window.addEventListener('touchend', requestAudioPermission);
-      } else {
-        window.addEventListener('deviceorientation', handleOrientation);
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      if (event.gamma === null || event.beta === null) {
+        return;
       }
+
+      const gamma = THREE.MathUtils.clamp(event.gamma, -45, 45);
+      const beta = THREE.MathUtils.clamp(event.beta, 20, 90);
+
+      this.targetRotationY = (gamma * Math.PI) / 180 * 0.18;
+      this.targetRotationX = ((beta - 45) * Math.PI) / 180 * 0.14;
+      this.orientationActive = true;
+    };
+
+    const startTracking = () => {
+      if (this.orientationActive) {
+        return;
+      }
+
+      if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+        (DeviceOrientationEvent as any).requestPermission()
+          .then((response: string) => {
+            if (response === 'granted') {
+              window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+              this.hasOrientationPermission = true;
+              this.orientationActive = true;
+            }
+          })
+          .catch(console.error);
+      } else {
+        window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+        this.hasOrientationPermission = true;
+        this.orientationActive = true;
+      }
+    };
+
+    // Sul telefono il primo tap/touch è spesso necessario per sbloccare il sensore.
+    window.addEventListener('pointerdown', startTracking, { once: true, passive: true });
+    window.addEventListener('touchstart', startTracking, { once: true, passive: true });
+    window.addEventListener('keydown', startTracking, { once: true });
+
+    if (!(DeviceOrientationEvent as any).requestPermission) {
+      startTracking();
     }
   }
 
@@ -89,16 +113,41 @@ export class Camera {
   }
 
   update() {
-    // Gestione movimento da accelerometro
-    if (this.targetRotationX !== 0 || this.targetRotationY !== 0) {
-      this.currentRotationX += (this.targetRotationX - this.currentRotationX) * 0.05;
-      this.currentRotationY += (this.targetRotationY - this.currentRotationY) * 0.05;
+    const hasGyroInput = Math.abs(this.targetRotationX) > 0.001 || Math.abs(this.targetRotationY) > 0.001;
 
-      const radius = 4.9;
-      this.instance.position.x = Math.sin(this.currentRotationY) * radius;
-      this.instance.position.z = Math.cos(this.currentRotationY) * radius;
-      this.instance.position.y = 1.7 + this.currentRotationX;
-      
+    if (hasGyroInput) {
+      this.currentRotationX += (this.targetRotationX - this.currentRotationX) * 0.1;
+      this.currentRotationY += (this.targetRotationY - this.currentRotationY) * 0.1;
+
+      const radius = this.initialRadius;
+      this.instance.position.x = 0.8 + Math.sin(this.currentRotationY) * radius * 0.4;
+      this.instance.position.z = this.initialRadius + Math.cos(this.currentRotationY) * radius * 0.25;
+      this.instance.position.y = this.initialHeight + this.currentRotationX * 0.7;
+
+      this.controls.target.set(
+        this.initialTarget.x + this.currentRotationY * 0.15,
+        this.initialTarget.y + this.currentRotationX * 0.1,
+        this.initialTarget.z
+      );
+      this.instance.lookAt(this.controls.target);
+    } else {
+      this.currentRotationX += (0 - this.currentRotationX) * 0.06;
+      this.currentRotationY += (0 - this.currentRotationY) * 0.06;
+
+      this.fallbackAngle += 0.006;
+      const sweep = Math.sin(this.fallbackAngle) * 1.25;
+
+      this.instance.position.set(
+        this.defaultPosition.x + sweep,
+        this.defaultPosition.y + Math.sin(this.fallbackAngle * 0.6) * 0.03,
+        this.defaultPosition.z
+      );
+
+      this.controls.target.set(
+        this.initialTarget.x + sweep * 0.18,
+        this.initialTarget.y,
+        this.initialTarget.z
+      );
       this.instance.lookAt(this.controls.target);
     }
 

@@ -21,7 +21,7 @@ export class Room {
     this.group = new THREE.Group();
 
     const roomSize = 10;
-    const roomHeight = 4;
+    const roomHeight = 5.2;
 
     // 1. Pavimento (senza luci)
     this.floor = new Floor(roomSize, roomSize, 10);

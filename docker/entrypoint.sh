@@ -11,12 +11,18 @@ mkdir -p storage/framework/views storage/framework/cache storage/framework/sessi
 
 # Crea un .env minimo se non esiste
 if [ ! -f .env ]; then
-    cp .env.example .env || true
+    if [ -f .env.production ]; then
+        cp .env.production .env
+    elif [ -f .env.example ]; then
+        cp .env.example .env
+    fi
 fi
 
 # Se siamo in produzione, usa il file di configurazione HTTPS
 if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "prod" ]; then
-    cp /var/www/html/.env.production /var/www/html/.env 2>/dev/null || true
+    if [ -f .env.production ]; then
+        cp /var/www/html/.env.production /var/www/html/.env 2>/dev/null || true
+    fi
 fi
 
 # Genera APP_KEY se assente

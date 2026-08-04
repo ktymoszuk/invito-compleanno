@@ -39,6 +39,8 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # 3. Copia del resto del codice sorgente
+COPY .env.example /var/www/html/.env.example
+COPY .env.production /var/www/html/.env.production
 COPY . .
 
 # 4. Inserimento dei file compilati del frontend dal primo stage

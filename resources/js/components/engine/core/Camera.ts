@@ -116,8 +116,8 @@ export class Camera {
     const clearUserDragging = () => {
       this.isUserDragging = false;
       this.isTouchActive = false;
-      this.swipeVelocityX *= 0.5;
-      this.swipeVelocityY *= 0.5;
+      this.swipeVelocityX *= 0.35;
+      this.swipeVelocityY *= 0.35;
     };
 
     this.handleTouchStart = (event: TouchEvent) => {
@@ -188,8 +188,8 @@ export class Camera {
       this.controls.target.y += this.swipeVelocityY;
       this.instance.position.x += this.swipeVelocityX * 0.35;
       this.instance.position.y += this.swipeVelocityY * 0.35;
-      this.swipeVelocityX *= 0.85;
-      this.swipeVelocityY *= 0.85;
+      this.swipeVelocityX *= 0.82;
+      this.swipeVelocityY *= 0.82;
     } else if (hasGyroInput && !this.isUserDragging) {
       this.currentRotationX += (this.targetRotationX - this.currentRotationX) * 0.12;
       this.currentRotationY += (this.targetRotationY - this.currentRotationY) * 0.12;

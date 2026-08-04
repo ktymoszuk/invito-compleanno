@@ -9,8 +9,8 @@ export class Camera {
   private hasOrientationPermission = false;
   private orientationActive = false;
   
-  // Posizionata nell'angolo opposto (dall'altra parte della stanza)
-  private defaultPosition = new THREE.Vector3(-2.5, 1.7, 4.5);
+  // Posizionata ancora più in fondo, proprio sul bordo estremo della stanza
+  private defaultPosition = new THREE.Vector3(-4.0, 1.7, 7.0);
   // Punta verso la direzione corretta (angolo in fondo a destra, leggermente spostata verso il centro)
   private initialTarget = new THREE.Vector3(1.2, 1.35, -2.5);
   
@@ -41,7 +41,7 @@ export class Camera {
     this.controls.enablePan = false;
     this.controls.enableZoom = true;
     this.controls.minDistance = 2.0;
-    this.controls.maxDistance = 9.0;
+    this.controls.maxDistance = 11.0;
 
     this.controls.target.copy(this.initialTarget);
 

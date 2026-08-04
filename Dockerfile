@@ -34,10 +34,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /var/www/html
 
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+COPY artisan ./artisan
+COPY bootstrap ./bootstrap
+COPY config ./config
+COPY database ./database
+COPY app ./app
+COPY routes ./routes
+COPY public ./public
+COPY resources ./resources
+COPY package.json package-lock.json ./
+COPY vite.config.js ./
+
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 COPY . .
 COPY --from=frontend-build /app/public/build ./public/build
+
+RUN php artisan package:discover --ansi \
+    && php artisan optimize:clear \
+    && php artisan optimize \
+    && php artisan storage:link \
+    && mkdir -p /run/php /var/log/nginx /var/www/html/storage/logs /var/www/html/bootstrap/cache /var/www/html/database \
+    && touch /var/www/html/database/database.sqlite \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 RUN php artisan optimize:clear \
     && php artisan optimize \

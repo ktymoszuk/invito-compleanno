@@ -46,6 +46,7 @@ export class Camera {
 
     this.controls.target.copy(this.initialTarget);
 
+    // Lasciamo liberi i limiti per permettere un'esplorazione completa
     this.controls.minAzimuthAngle = -Math.PI;
     this.controls.maxAzimuthAngle = Math.PI;
     
@@ -63,9 +64,8 @@ export class Camera {
     const handleOrientation = (event: DeviceOrientationEvent) => {
       if (event.gamma === null || event.beta === null) return;
 
-      // Leggiamo i valori dell'inclinazione del telefono
-      const gamma = THREE.MathUtils.clamp(event.gamma, -45, 45); // Destra/Sinistra
-      const beta = THREE.MathUtils.clamp(event.beta, 15, 85);    // Avanti/Indietro
+      const gamma = THREE.MathUtils.clamp(event.gamma, -50, 50);
+      const beta = THREE.MathUtils.clamp(event.beta, 15, 85);
 
       this.targetRotationY = (gamma * Math.PI) / 180 * 0.35;
       this.targetRotationX = ((beta - 45) * Math.PI) / 180 * 0.25;
@@ -75,7 +75,6 @@ export class Camera {
     const startTracking = () => {
       if (this.hasOrientationPermission) return;
 
-      // Richiesta permessi espliciti per iOS 13+
       if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
         (DeviceOrientationEvent as any).requestPermission()
           .then((response: string) => {
@@ -87,7 +86,6 @@ export class Camera {
           })
           .catch(console.error);
       } else {
-        // Android e altri dispositivi compatibili
         window.addEventListener('deviceorientation', handleOrientation, { passive: true });
         this.hasOrientationPermission = true;
         this.orientationActive = true;
@@ -104,7 +102,6 @@ export class Camera {
       this.lastUserInteraction = performance.now();
     };
 
-    // Al primo tocco sblocchiamo i sensori (richiesto da Safari/iOS)
     window.addEventListener('pointerdown', startTracking, { once: true, passive: true });
     window.addEventListener('touchstart', startTracking, { once: true, passive: true });
     
@@ -132,26 +129,27 @@ export class Camera {
     const now = performance.now();
     const timeSinceInteraction = now - this.lastUserInteraction;
     
+    // L'auto-movimento scatta dopo 3 secondi di inattività totale
     const shouldAutoMove = timeSinceInteraction > 3000 && !this.isUserInteracting;
 
     if (shouldAutoMove) {
-      // 1. Auto-movimento fluido a 180° se l'utente non interagisce da 3 secondi
-      this.fallbackAngle += 0.03; 
-      const sweep = Math.sin(this.fallbackAngle) * 3.5;
+      // Panoramica automatica più ampia per includere la zona laterale con la scritta Marco Rossi e il 60
+      this.fallbackAngle += 0.025; 
+      const sweep = Math.sin(this.fallbackAngle) * 3.0; 
 
       this.instance.position.set(
         this.defaultPosition.x + sweep,
         this.defaultPosition.y,
-        this.defaultPosition.z - Math.abs(sweep) * 0.2
+        this.defaultPosition.z - Math.abs(sweep) * 0.15
       );
 
       this.controls.target.set(
-        this.initialTarget.x + sweep * 0.5,
+        this.initialTarget.x + sweep * 0.4,
         this.initialTarget.y,
         this.initialTarget.z
       );
     } else if (this.orientationActive && !this.isUserInteracting && (Math.abs(this.targetRotationX) > 0.001 || Math.abs(this.targetRotationY) > 0.001)) {
-      // 2. Giroscopio attivo: muove la visuale in base all'inclinazione del telefono quando non si sta toccando lo schermo
+      // Controllo tramite giroscopio del telefono
       this.currentRotationX += (this.targetRotationX - this.currentRotationX) * 0.1;
       this.currentRotationY += (this.targetRotationY - this.currentRotationY) * 0.1;
 
@@ -161,8 +159,8 @@ export class Camera {
       this.instance.position.y = 1.7 + this.currentRotationX;
       
       this.controls.target.set(
-        this.initialTarget.x + this.currentRotationY * 0.5,
-        this.initialTarget.y + this.currentRotationX * 0.5,
+        this.initialTarget.x + this.currentRotationY * 0.4,
+        this.initialTarget.y + this.currentRotationX * 0.4,
         this.initialTarget.z
       );
       this.instance.lookAt(this.controls.target);

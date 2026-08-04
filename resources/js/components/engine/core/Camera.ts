@@ -16,10 +16,15 @@ export class Camera {
   private initialRadius = 6.0;
   private initialHeight = 1.7;
   private initialTarget = new THREE.Vector3(-0.2, 1.35, 0);
-  private defaultPosition = new THREE.Vector3(0.0, 1.7, 6.0);
+  private defaultPosition = new THREE.Vector3(0.0, 1.7, 5.8);
   private fallbackAngle = 0;
   private lastUserInteraction = 0;
   private isUserDragging = false;
+  private swipeVelocityX = 0;
+  private swipeVelocityY = 0;
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private isTouchActive = false;
 
   constructor(private sizes: Sizes, private domElement: HTMLElement) {
     this.setInstance();
@@ -59,6 +64,9 @@ export class Camera {
 
     this.controls.update();
   }
+
+  private handleTouchStart: (event: TouchEvent) => void = () => {};
+  private handleTouchMove: (event: TouchEvent) => void = () => {};
 
   private initOrientation() {
     if (typeof window === 'undefined' || typeof window.DeviceOrientationEvent === 'undefined') {
@@ -107,6 +115,42 @@ export class Camera {
 
     const clearUserDragging = () => {
       this.isUserDragging = false;
+      this.isTouchActive = false;
+      this.swipeVelocityX *= 0.5;
+      this.swipeVelocityY *= 0.5;
+    };
+
+    this.handleTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) {
+        return;
+      }
+
+      this.touchStartX = event.touches[0].clientX;
+      this.touchStartY = event.touches[0].clientY;
+      this.isTouchActive = true;
+      this.swipeVelocityX = 0;
+      this.swipeVelocityY = 0;
+      this.lastUserInteraction = performance.now();
+      this.isUserDragging = true;
+    };
+
+    this.handleTouchMove = (event: TouchEvent) => {
+      if (!this.isTouchActive || event.touches.length !== 1) {
+        return;
+      }
+
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - this.touchStartX;
+      const deltaY = touch.clientY - this.touchStartY;
+
+      // Swype specchiati: il movimento della vista è opposto al gesto dell'utente.
+      this.swipeVelocityX = -deltaX * 0.003;
+      this.swipeVelocityY = deltaY * 0.003;
+
+      this.touchStartX = touch.clientX;
+      this.touchStartY = touch.clientY;
+      this.lastUserInteraction = performance.now();
+      this.isUserDragging = true;
     };
 
     // Sul telefono il primo tap/touch è spesso necessario per sbloccare il sensore.
@@ -116,6 +160,8 @@ export class Camera {
     window.addEventListener('pointerdown', markUserInteraction, { passive: true });
     window.addEventListener('pointermove', markUserInteraction, { passive: true });
     window.addEventListener('wheel', markUserInteraction, { passive: true });
+    window.addEventListener('touchstart', this.handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', this.handleTouchMove, { passive: true });
     window.addEventListener('touchmove', markUserInteraction, { passive: true });
     window.addEventListener('pointerup', clearUserDragging, { passive: true });
     window.addEventListener('pointerleave', clearUserDragging, { passive: true });
@@ -137,7 +183,14 @@ export class Camera {
     const hasRecentInteraction = now - this.lastUserInteraction < 3000;
     const shouldAutoMove = !this.isUserDragging && !hasRecentInteraction;
 
-    if (hasGyroInput && !this.isUserDragging) {
+    if (Math.abs(this.swipeVelocityX) > 0.0001 || Math.abs(this.swipeVelocityY) > 0.0001) {
+      this.controls.target.x += this.swipeVelocityX;
+      this.controls.target.y += this.swipeVelocityY;
+      this.instance.position.x += this.swipeVelocityX * 0.35;
+      this.instance.position.y += this.swipeVelocityY * 0.35;
+      this.swipeVelocityX *= 0.85;
+      this.swipeVelocityY *= 0.85;
+    } else if (hasGyroInput && !this.isUserDragging) {
       this.currentRotationX += (this.targetRotationX - this.currentRotationX) * 0.12;
       this.currentRotationY += (this.targetRotationY - this.currentRotationY) * 0.12;
 
@@ -156,8 +209,8 @@ export class Camera {
       this.currentRotationX += (0 - this.currentRotationX) * 0.05;
       this.currentRotationY += (0 - this.currentRotationY) * 0.05;
 
-      this.fallbackAngle += 0.018;
-      const sweep = Math.sin(this.fallbackAngle) * 1.8;
+      this.fallbackAngle += 0.012;
+      const sweep = Math.sin(this.fallbackAngle) * 1.1;
 
       this.instance.position.set(
         this.defaultPosition.x + sweep,
@@ -166,7 +219,7 @@ export class Camera {
       );
 
       this.controls.target.set(
-        this.initialTarget.x + sweep * 0.16,
+        this.initialTarget.x + sweep * 0.10,
         this.initialTarget.y,
         this.initialTarget.z
       );

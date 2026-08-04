@@ -5,10 +5,13 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PHP_OPCACHE_VALIDATE_TIMESTAMPS="0" \
     PHP_OPCACHE_ENABLE="1"
 
-RUN apt-get update && apt-get install -y \
+# 1. Installazione pacchetti di sistema necessari
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
     libonig-dev \
     libxml2-dev \
     zip \
@@ -18,29 +21,54 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libc-client-dev \
     libkrb5-dev \
+    libssl-dev \
     pkg-config \
-    && docker-php-ext-install pdo pdo_mysql pdo_sqlite mysqli mbstring exif pcntl bcmath gd intl zip \
-    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && curl -sL https://deb.nodesource.com/setup_20.x | bash - \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Configurazione e installazione estensioni PHP corrette per la versione 8.2
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
+    && docker-php-ext-install -j$(nproc) \
+       pdo \
+       pdo_mysql \
+       pdo_sqlite \
+       mysqli \
+       mbstring \
+       exif \
+       pcntl \
+       bcmath \
+       gd \
+       intl \
+       zip \
+       imap
+
+# 3. Installazione di Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# 4. Installazione di Node.js (versione 20)
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
 
+# 5. Copia dei file delle dipendenze per sfruttare la cache di Docker
 COPY composer.json composer.lock ./
 COPY package.json package-lock.json ./
 
+# 6. Installazione dipendenze PHP e Node
 RUN composer install --no-dev --optimize-autoloader --no-interaction \
     && npm ci --no-audit --no-fund
 
+# 7. Copia del resto del codice sorgente
 COPY . .
 
+# 8. Build del frontend Vite, ottimizzazioni Laravel e permessi
 RUN npm run build \
     && php artisan optimize:clear \
     && php artisan optimize \
     && php artisan storage:link \
     && chown -R www-data:www-data /var/www/html \
-    && cp /var/www/html/docker/nginx.conf /etc/nginx/sites-enabled/default \
     && mkdir -p /run/php /var/log/nginx /var/www/html/storage/logs \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 

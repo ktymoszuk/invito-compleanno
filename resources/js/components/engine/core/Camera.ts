@@ -13,13 +13,13 @@ export class Camera {
   private currentRotationY = 0;
   private hasOrientationPermission = false;
   private orientationActive = false;
-  private initialRadius = 5.3;
+  private initialRadius = 6.0;
   private initialHeight = 1.7;
   private initialTarget = new THREE.Vector3(-0.2, 1.35, 0);
-  private defaultPosition = new THREE.Vector3(0.0, 1.7, 5.35);
+  private defaultPosition = new THREE.Vector3(0.0, 1.7, 6.0);
   private fallbackAngle = 0;
-  private idleTimer = 0;
   private lastUserInteraction = 0;
+  private isUserDragging = false;
 
   constructor(private sizes: Sizes, private domElement: HTMLElement) {
     this.setInstance();
@@ -41,11 +41,12 @@ export class Camera {
   private setControls() {
     this.controls = new OrbitControls(this.instance, this.domElement);
     this.controls.enableDamping = true;
+    this.controls.enablePan = true;
 
     // 👈 ABILITA LO ZOOM (pinch-to-zoom su mobile e rotellina su desktop)
     this.controls.enableZoom = true;
-    this.controls.minDistance = 2.5; // Distanza minima per non entrare troppo nei dettagli
-    this.controls.maxDistance = 7.0; // Distanza massima per non uscire dalla stanza
+    this.controls.minDistance = 2.0;
+    this.controls.maxDistance = 9.0;
 
     // Il target punta verso la console del DJ, con una vista più ampia e meno centrale.
     this.controls.target.copy(this.initialTarget);
@@ -101,15 +102,24 @@ export class Camera {
 
     const markUserInteraction = () => {
       this.lastUserInteraction = performance.now();
+      this.isUserDragging = true;
+    };
+
+    const clearUserDragging = () => {
+      this.isUserDragging = false;
     };
 
     // Sul telefono il primo tap/touch è spesso necessario per sbloccare il sensore.
     window.addEventListener('pointerdown', startTracking, { once: true, passive: true });
     window.addEventListener('touchstart', startTracking, { once: true, passive: true });
     window.addEventListener('keydown', startTracking, { once: true });
+    window.addEventListener('pointerdown', markUserInteraction, { passive: true });
     window.addEventListener('pointermove', markUserInteraction, { passive: true });
     window.addEventListener('wheel', markUserInteraction, { passive: true });
     window.addEventListener('touchmove', markUserInteraction, { passive: true });
+    window.addEventListener('pointerup', clearUserDragging, { passive: true });
+    window.addEventListener('pointerleave', clearUserDragging, { passive: true });
+    window.addEventListener('touchend', clearUserDragging, { passive: true });
 
     if (!(DeviceOrientationEvent as any).requestPermission) {
       startTracking();
@@ -124,9 +134,10 @@ export class Camera {
   update() {
     const now = performance.now();
     const hasGyroInput = Math.abs(this.targetRotationX) > 0.001 || Math.abs(this.targetRotationY) > 0.001;
-    const hasRecentInteraction = now - this.lastUserInteraction < 2000;
+    const hasRecentInteraction = now - this.lastUserInteraction < 3000;
+    const shouldAutoMove = !this.isUserDragging && !hasRecentInteraction;
 
-    if (hasGyroInput && hasRecentInteraction) {
+    if (hasGyroInput && !this.isUserDragging) {
       this.currentRotationX += (this.targetRotationX - this.currentRotationX) * 0.12;
       this.currentRotationY += (this.targetRotationY - this.currentRotationY) * 0.12;
 
@@ -141,12 +152,12 @@ export class Camera {
         this.initialTarget.z
       );
       this.instance.lookAt(this.controls.target);
-    } else {
+    } else if (shouldAutoMove) {
       this.currentRotationX += (0 - this.currentRotationX) * 0.05;
       this.currentRotationY += (0 - this.currentRotationY) * 0.05;
 
-      this.fallbackAngle += 0.012;
-      const sweep = Math.sin(this.fallbackAngle) * 1.55;
+      this.fallbackAngle += 0.018;
+      const sweep = Math.sin(this.fallbackAngle) * 1.8;
 
       this.instance.position.set(
         this.defaultPosition.x + sweep,

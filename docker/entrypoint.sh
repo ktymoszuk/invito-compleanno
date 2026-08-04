@@ -5,6 +5,7 @@ set -e
 touch /var/www/html/database/database.sqlite
 
 # Ottimizzazioni ed esecuzione migrazioni in sicurezza all'avvio
+# Evita view:cache in boot per non rompere il deploy su Render
 php artisan config:cache
 php artisan route:cache
 php artisan storage:link --force

@@ -1,18 +1,16 @@
-#!/bin/sh
-set -eu
+#!/usr/bin/env bash
+set -e
 
-if [ ! -f /var/www/html/.env ]; then
-    cp /var/www/html/.env.example /var/www/html/.env || true
-fi
+# Crea il DB SQLite se non esiste
+touch /var/www/html/database/database.sqlite
 
-if [ -z "${APP_KEY:-}" ]; then
-    php /var/www/html/artisan key:generate --force || true
-fi
+# Ottimizzazioni ed esecuzione migrazioni in sicurezza all'avvio
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan storage:link --force
+php artisan migrate --force
 
-php /var/www/html/artisan config:clear || true
-php /var/www/html/artisan migrate --force || true
-php /var/www/html/artisan optimize || true
-php /var/www/html/artisan storage:link || true
-
-/usr/sbin/nginx -g 'daemon off;' &
-php-fpm -F
+# Avvia Nginx e PHP-FPM
+nginx
+exec php-fpm

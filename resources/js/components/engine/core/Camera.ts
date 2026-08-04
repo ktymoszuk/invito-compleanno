@@ -9,8 +9,8 @@ export class Camera {
   private hasOrientationPermission = false;
   private orientationActive = false;
   
-  private initialTarget = new THREE.Vector3(-0.2, 1.35, 0);
-  private defaultPosition = new THREE.Vector3(0.0, 1.7, 5.8);
+  private initialTarget = new THREE.Vector3(1.2, 1.35, -2.5);
+  private defaultPosition = new THREE.Vector3(2.5, 1.7, -4.5);
   
   private fallbackAngle = 0;
   private lastUserInteraction = 0;
@@ -81,9 +81,6 @@ export class Camera {
     };
 
     const endInteraction = () => {
-      // Quando l'utente rilascia lo schermo, aggiorniamo i riferimenti di base 
-      // con la posizione ESATTA in cui si trova la camera in questo millisecondo.
-      // In questo modo OrbitControls non farà alcuno scatto all'indietro.
       this.defaultPosition.copy(this.instance.position);
       this.initialTarget.copy(this.controls.target);
       
@@ -119,19 +116,16 @@ export class Camera {
     const now = performance.now();
     const timeSinceInteraction = now - this.lastUserInteraction;
     
-    // L'auto-movimento si attiva SOLO dopo 3 secondi di inattività totale dell'utente
     const shouldAutoMove = timeSinceInteraction > 3000 && !this.isUserInteracting;
 
     if (shouldAutoMove) {
       this.fallbackAngle += 0.02; 
       const sweep = Math.sin(this.fallbackAngle) * 2.0; 
 
-      // Effettua una panoramica fluida partendo dall'ultima posizione salvata
       this.instance.position.x = this.defaultPosition.x + sweep;
       this.controls.target.x = this.initialTarget.x + sweep * 0.3;
     }
 
-    // Lasciamo che OrbitControls gestisca lo smorzamento e la posizione senza interferenze
     this.controls.update();
   }
 }

@@ -50,11 +50,7 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-script
 COPY . .
 COPY --from=frontend-build /app/public/build ./public/build
 
-RUN php artisan package:discover --ansi \
-    && php artisan optimize:clear \
-    && php artisan optimize \
-    && php artisan storage:link \
-    && mkdir -p /run/php /var/log/nginx /var/www/html/storage/logs /var/www/html/bootstrap/cache /var/www/html/database \
+RUN mkdir -p /run/php /var/log/nginx /var/www/html/storage/logs /var/www/html/bootstrap/cache /var/www/html/database \
     && touch /var/www/html/database/database.sqlite \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache

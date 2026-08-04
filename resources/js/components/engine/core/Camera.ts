@@ -46,7 +46,6 @@ export class Camera {
 
     this.controls.target.copy(this.initialTarget);
 
-    // Lasciamo liberi i limiti per permettere un'esplorazione completa
     this.controls.minAzimuthAngle = -Math.PI;
     this.controls.maxAzimuthAngle = Math.PI;
     
@@ -63,6 +62,7 @@ export class Camera {
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
       if (event.gamma === null || event.beta === null) return;
+      if (this.isUserInteracting) return;
 
       const gamma = THREE.MathUtils.clamp(event.gamma, -50, 50);
       const beta = THREE.MathUtils.clamp(event.beta, 15, 85);
@@ -98,6 +98,13 @@ export class Camera {
     };
 
     const endInteraction = () => {
+      // 💡 QUANDO L'UTENTE MOLLA LO SCHERMO:
+      // Salviamo la posizione e il target attuali come nuovo punto di riferimento fisso.
+      // In questo modo la camera non tornerà mai indietro.
+      this.defaultPosition.copy(this.instance.position);
+      this.initialTarget.copy(this.controls.target);
+      this.fallbackAngle = 0; // Azzera l'angolo di movimento automatico partendo da qui
+
       this.isUserInteracting = false;
       this.lastUserInteraction = performance.now();
     };
@@ -129,27 +136,26 @@ export class Camera {
     const now = performance.now();
     const timeSinceInteraction = now - this.lastUserInteraction;
     
-    // L'auto-movimento scatta dopo 3 secondi di inattività totale
+    // L'auto-movimento parte solo se sono passati 3 secondi dall'ultimo rilascio e non si sta interagendo
     const shouldAutoMove = timeSinceInteraction > 3000 && !this.isUserInteracting;
 
     if (shouldAutoMove) {
-      // Panoramica automatica più ampia per includere la zona laterale con la scritta Marco Rossi e il 60
       this.fallbackAngle += 0.025; 
-      const sweep = Math.sin(this.fallbackAngle) * 3.0; 
+      const sweep = Math.sin(this.fallbackAngle) * 2.5; 
 
+      // Si muove fluidamente partendo dall'ultima posizione in cui l'utente l'ha lasciata
       this.instance.position.set(
         this.defaultPosition.x + sweep,
         this.defaultPosition.y,
-        this.defaultPosition.z - Math.abs(sweep) * 0.15
+        this.defaultPosition.z
       );
 
       this.controls.target.set(
-        this.initialTarget.x + sweep * 0.4,
+        this.initialTarget.x + sweep * 0.3,
         this.initialTarget.y,
         this.initialTarget.z
       );
     } else if (this.orientationActive && !this.isUserInteracting && (Math.abs(this.targetRotationX) > 0.001 || Math.abs(this.targetRotationY) > 0.001)) {
-      // Controllo tramite giroscopio del telefono
       this.currentRotationX += (this.targetRotationX - this.currentRotationX) * 0.1;
       this.currentRotationY += (this.targetRotationY - this.currentRotationY) * 0.1;
 

@@ -6,10 +6,6 @@ export class Camera {
   instance!: THREE.PerspectiveCamera;
   controls!: OrbitControls;
 
-  private targetRotationX = 0;
-  private targetRotationY = 0;
-  private currentRotationX = 0;
-  private currentRotationY = 0;
   private hasOrientationPermission = false;
   private orientationActive = false;
   
@@ -39,6 +35,7 @@ export class Camera {
   private setControls() {
     this.controls = new OrbitControls(this.instance, this.domElement);
     this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.05;
     this.controls.enablePan = false;
     this.controls.enableZoom = true;
     this.controls.minDistance = 2.0;
@@ -60,18 +57,6 @@ export class Camera {
       return;
     }
 
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-      if (event.gamma === null || event.beta === null) return;
-      if (this.isUserInteracting) return;
-
-      const gamma = THREE.MathUtils.clamp(event.gamma, -50, 50);
-      const beta = THREE.MathUtils.clamp(event.beta, 15, 85);
-
-      this.targetRotationY = (gamma * Math.PI) / 180 * 0.35;
-      this.targetRotationX = ((beta - 45) * Math.PI) / 180 * 0.25;
-      this.orientationActive = true;
-    };
-
     const startTracking = () => {
       if (this.hasOrientationPermission) return;
 
@@ -79,14 +64,12 @@ export class Camera {
         (DeviceOrientationEvent as any).requestPermission()
           .then((response: string) => {
             if (response === 'granted') {
-              window.addEventListener('deviceorientation', handleOrientation, { passive: true });
               this.hasOrientationPermission = true;
               this.orientationActive = true;
             }
           })
           .catch(console.error);
       } else {
-        window.addEventListener('deviceorientation', handleOrientation, { passive: true });
         this.hasOrientationPermission = true;
         this.orientationActive = true;
       }
@@ -98,13 +81,12 @@ export class Camera {
     };
 
     const endInteraction = () => {
-      // 💡 QUANDO L'UTENTE MOLLA LO SCHERMO:
-      // Salviamo la posizione e il target attuali come nuovo punto di riferimento fisso.
-      // In questo modo la camera non tornerà mai indietro.
+      // Quando l'utente rilascia lo schermo, aggiorniamo i riferimenti di base 
+      // con la posizione ESATTA in cui si trova la camera in questo millisecondo.
+      // In questo modo OrbitControls non farà alcuno scatto all'indietro.
       this.defaultPosition.copy(this.instance.position);
       this.initialTarget.copy(this.controls.target);
-      this.fallbackAngle = 0; // Azzera l'angolo di movimento automatico partendo da qui
-
+      
       this.isUserInteracting = false;
       this.lastUserInteraction = performance.now();
     };
@@ -123,7 +105,8 @@ export class Camera {
     window.addEventListener('pointercancel', endInteraction, { passive: true });
 
     if (!(DeviceOrientationEvent as any).requestPermission) {
-      startTracking();
+      this.hasOrientationPermission = true;
+      this.orientationActive = true;
     }
   }
 
@@ -136,42 +119,19 @@ export class Camera {
     const now = performance.now();
     const timeSinceInteraction = now - this.lastUserInteraction;
     
-    // L'auto-movimento parte solo se sono passati 3 secondi dall'ultimo rilascio e non si sta interagendo
+    // L'auto-movimento si attiva SOLO dopo 3 secondi di inattività totale dell'utente
     const shouldAutoMove = timeSinceInteraction > 3000 && !this.isUserInteracting;
 
     if (shouldAutoMove) {
-      this.fallbackAngle += 0.025; 
-      const sweep = Math.sin(this.fallbackAngle) * 2.5; 
+      this.fallbackAngle += 0.02; 
+      const sweep = Math.sin(this.fallbackAngle) * 2.0; 
 
-      // Si muove fluidamente partendo dall'ultima posizione in cui l'utente l'ha lasciata
-      this.instance.position.set(
-        this.defaultPosition.x + sweep,
-        this.defaultPosition.y,
-        this.defaultPosition.z
-      );
-
-      this.controls.target.set(
-        this.initialTarget.x + sweep * 0.3,
-        this.initialTarget.y,
-        this.initialTarget.z
-      );
-    } else if (this.orientationActive && !this.isUserInteracting && (Math.abs(this.targetRotationX) > 0.001 || Math.abs(this.targetRotationY) > 0.001)) {
-      this.currentRotationX += (this.targetRotationX - this.currentRotationX) * 0.1;
-      this.currentRotationY += (this.targetRotationY - this.currentRotationY) * 0.1;
-
-      const radius = 5.8;
-      this.instance.position.x = Math.sin(this.currentRotationY) * radius;
-      this.instance.position.z = Math.cos(this.currentRotationY) * radius;
-      this.instance.position.y = 1.7 + this.currentRotationX;
-      
-      this.controls.target.set(
-        this.initialTarget.x + this.currentRotationY * 0.4,
-        this.initialTarget.y + this.currentRotationX * 0.4,
-        this.initialTarget.z
-      );
-      this.instance.lookAt(this.controls.target);
+      // Effettua una panoramica fluida partendo dall'ultima posizione salvata
+      this.instance.position.x = this.defaultPosition.x + sweep;
+      this.controls.target.x = this.initialTarget.x + sweep * 0.3;
     }
 
+    // Lasciamo che OrbitControls gestisca lo smorzamento e la posizione senza interferenze
     this.controls.update();
   }
 }

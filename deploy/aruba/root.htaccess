@@ -1,0 +1,17 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Lascia ad Aruba la directory usata per la validazione dei certificati SSL.
+    RewriteRule ^\.well-known/ - [L]
+
+    # Impedisce accessi diretti ai file sensibili se il progetto intero e nella document root.
+    RewriteRule ^(?:\.env|\.git)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:app|bootstrap|config|database|deploy|resources|routes|storage|tests|vendor)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:artisan|composer\.(?:json|lock)|package(?:-lock)?\.json|phpunit\.xml|vite\.config\.js)$ - [F,L,NC]
+
+    # Espone esclusivamente il contenuto della cartella public.
+    RewriteRule ^public(?:/|$) - [L,NC]
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+Options -Indexes

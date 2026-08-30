@@ -6,6 +6,14 @@ import { CountdownBoard } from './CountdownBoard';
 import { DJConsole } from './DJConsole';
 import { DJSign } from './DJSign';
 import { ConfettiRain } from './ConfettiRain';
+import { RobotDJ } from './RobotDJ';
+import { MovingLightRig } from './MovingLightRig';
+import { Bar } from './Bar';
+import { LoungeSet } from './LoungeSet';
+import { TallPlant } from './TallPlant';
+import { BirthdayCake } from './BirthdayCake';
+import { Payphone } from './Payphone';
+import { VinylWall } from './VinylWall';
 
 export class Room {
   group: THREE.Group;
@@ -14,10 +22,20 @@ export class Room {
   walls: Walls;
   countdownBoard: CountdownBoard;
   djConsole: DJConsole;
+  robotDJ: RobotDJ;
+  movingLightRig: MovingLightRig;
+  bar: Bar;
+  loungeSet: LoungeSet;
+  tallPlant: TallPlant;
+  birthdayCake: BirthdayCake;
+  payphone: Payphone;
+  vinylWall: VinylWall;
   djSign: DJSign;
   confettiRain: ConfettiRain | null = null; // Inizialmente null
+  private cakeConfettiRain: ConfettiRain | null = null;
+  private cakeCelebrationTime = 0;
 
-  constructor(targetDate: Date = new Date('2026-12-31T23:59:59')) {
+  constructor(targetDate: Date = new Date('2026-10-30T21:30:00+01:00')) {
     this.group = new THREE.Group();
 
     const roomSize = 10;
@@ -42,6 +60,30 @@ export class Room {
     this.djConsole = new DJConsole();
     this.group.add(this.djConsole.group);
 
+    this.robotDJ = new RobotDJ();
+    this.djConsole.group.add(this.robotDJ.group);
+
+    this.movingLightRig = new MovingLightRig();
+    this.group.add(this.movingLightRig.group);
+
+    this.bar = new Bar();
+    this.group.add(this.bar.group);
+
+    this.loungeSet = new LoungeSet();
+    this.group.add(this.loungeSet.group);
+
+    this.tallPlant = new TallPlant();
+    this.group.add(this.tallPlant.group);
+
+    this.birthdayCake = new BirthdayCake();
+    this.group.add(this.birthdayCake.group);
+
+    this.payphone = new Payphone();
+    this.group.add(this.payphone.group);
+
+    this.vinylWall = new VinylWall();
+    this.group.add(this.vinylWall.group);
+
     // 5. Scritte luminose
     this.djSign = new DJSign();
     this.group.add(this.djSign.group);
@@ -57,6 +99,13 @@ export class Room {
     }
   }
 
+  celebrateCake() {
+    if (!this.birthdayCake.celebrate()) return;
+    this.cakeConfettiRain = new ConfettiRain();
+    this.cakeCelebrationTime = 5.2;
+    this.group.add(this.cakeConfettiRain.group);
+  }
+
   update(delta: number) {
     if (this.floor) {
       this.floor.update(delta);
@@ -64,8 +113,34 @@ export class Room {
     if (this.countdownBoard) {
       this.countdownBoard.update();
     }
+    if (this.robotDJ) {
+      this.robotDJ.update(delta);
+    }
+    if (this.djConsole) {
+      this.djConsole.update(delta);
+    }
+    if (this.movingLightRig) {
+      this.movingLightRig.update(delta);
+    }
+    if (this.bar) {
+      this.bar.update(delta);
+    }
+    if (this.birthdayCake) {
+      this.birthdayCake.update(delta);
+    }
+    if (this.payphone) {
+      this.payphone.update(delta);
+    }
     if (this.confettiRain) {
       this.confettiRain.update(); // Aggiorna i coriandoli solo se sono stati attivati
+    }
+    if (this.cakeConfettiRain) {
+      this.cakeConfettiRain.update();
+      this.cakeCelebrationTime -= delta;
+      if (this.cakeCelebrationTime <= 0) {
+        this.group.remove(this.cakeConfettiRain.group);
+        this.cakeConfettiRain = null;
+      }
     }
   }
 }

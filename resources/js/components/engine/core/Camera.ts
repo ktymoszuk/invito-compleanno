@@ -17,11 +17,22 @@ export class Camera {
   private fallbackAngle = 0;
   private lastUserInteraction = 0;
   private isUserInteracting = false;
+  private navigationRoot: THREE.Object3D | null = null;
+  private navigationTarget: THREE.Vector3 | null = null;
+  private navigationPosition: THREE.Vector3 | null = null;
+  private pointerStart = new THREE.Vector2();
+  private pointerMoved = false;
+  private readonly raycaster = new THREE.Raycaster();
+  private readonly pointer = new THREE.Vector2();
+  private interactiveObjects: Array<{ root: THREE.Object3D; action: () => void }> = [];
+  private readonly minTarget = new THREE.Vector3(-4.25, 0.65, -4.25);
+  private readonly maxTarget = new THREE.Vector3(4.25, 3.8, 4.25);
 
   constructor(private sizes: Sizes, private domElement: HTMLElement) {
     this.setInstance();
     this.setControls();
     this.initOrientation();
+    this.initPointNavigation();
   }
 
   private setInstance() {
@@ -38,7 +49,9 @@ export class Camera {
     this.controls = new OrbitControls(this.instance, this.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
-    this.controls.enablePan = false;
+    this.controls.enablePan = true;
+    this.controls.panSpeed = 0.72;
+    this.controls.screenSpacePanning = false;
     this.controls.enableZoom = true;
     this.controls.minDistance = 2.0;
     this.controls.maxDistance = 11.0;
@@ -50,6 +63,13 @@ export class Camera {
     
     this.controls.minPolarAngle = Math.PI / 4;
     this.controls.maxPolarAngle = Math.PI / 1.7;
+
+    this.controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+    this.controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
+    this.controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+    this.controls.touches.ONE = THREE.TOUCH.ROTATE;
+    this.controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
+    this.controls.listenToKeyEvents(window);
 
     this.controls.update();
   }
@@ -83,8 +103,10 @@ export class Camera {
     };
 
     const endInteraction = () => {
+      this.constrainTarget();
       this.defaultPosition.copy(this.instance.position);
       this.initialTarget.copy(this.controls.target);
+      this.fallbackAngle = 0;
       
       this.isUserInteracting = false;
       this.lastUserInteraction = performance.now();
@@ -114,20 +136,111 @@ export class Camera {
     this.instance.updateProjectionMatrix();
   }
 
+  setNavigationRoot(root: THREE.Object3D) {
+    this.navigationRoot = root;
+  }
+
+  addInteraction(root: THREE.Object3D, action: () => void) {
+    this.interactiveObjects.push({ root, action });
+  }
+
   update() {
     const now = performance.now();
     const timeSinceInteraction = now - this.lastUserInteraction;
+
+    if (this.navigationTarget && this.navigationPosition) {
+      this.controls.target.lerp(this.navigationTarget, 0.075);
+      this.instance.position.lerp(this.navigationPosition, 0.075);
+
+      if (this.controls.target.distanceToSquared(this.navigationTarget) < 0.001) {
+        this.controls.target.copy(this.navigationTarget);
+        this.instance.position.copy(this.navigationPosition);
+        this.defaultPosition.copy(this.instance.position);
+        this.initialTarget.copy(this.controls.target);
+        this.navigationTarget = null;
+        this.navigationPosition = null;
+      }
+    }
     
-    const shouldAutoMove = timeSinceInteraction > 3000 && !this.isUserInteracting;
+    const shouldAutoMove = timeSinceInteraction > 3000
+      && !this.isUserInteracting
+      && !this.navigationTarget;
 
     if (shouldAutoMove) {
-      this.fallbackAngle += 0.02; 
-      const sweep = Math.sin(this.fallbackAngle) * 2.0; 
+      this.fallbackAngle += 0.018;
+      const idleRotation = Math.sin(this.fallbackAngle) * 0.22;
+      const baseOffset = this.defaultPosition.clone().sub(this.initialTarget);
+      baseOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), idleRotation);
 
-      this.instance.position.x = this.defaultPosition.x + sweep;
-      this.controls.target.x = this.initialTarget.x + sweep * 0.3;
+      this.instance.position.copy(this.initialTarget).add(baseOffset);
+      this.controls.target.copy(this.initialTarget);
     }
 
     this.controls.update();
+    this.constrainTarget();
+  }
+
+  private constrainTarget() {
+    const previousTarget = this.controls.target.clone();
+    this.controls.target.clamp(this.minTarget, this.maxTarget);
+    this.instance.position.add(this.controls.target.clone().sub(previousTarget));
+  }
+
+  private initPointNavigation() {
+    this.domElement.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      this.pointerStart.set(event.clientX, event.clientY);
+      this.pointerMoved = false;
+      this.navigationTarget = null;
+      this.navigationPosition = null;
+    }, { passive: true });
+
+    this.domElement.addEventListener('pointermove', (event) => {
+      if (Math.hypot(event.clientX - this.pointerStart.x, event.clientY - this.pointerStart.y) > 8) {
+        this.pointerMoved = true;
+      }
+    }, { passive: true });
+
+    this.domElement.addEventListener('pointerup', (event) => {
+      if (event.button !== 0 || this.pointerMoved || !this.navigationRoot) return;
+
+      const bounds = this.domElement.getBoundingClientRect();
+      this.pointer.set(
+        ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
+        -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
+      );
+      this.raycaster.setFromCamera(this.pointer, this.instance);
+
+      const intersections = this.raycaster.intersectObject(this.navigationRoot, true);
+      const intersection = intersections[0];
+      if (!intersection) return;
+
+      const interaction = intersections
+        .map(({ object }) => this.interactiveObjects.find(({ root }) => {
+          let current: THREE.Object3D | null = object;
+          while (current) {
+            if (current === root) return true;
+            current = current.parent;
+          }
+          return false;
+        }))
+        .find((candidate) => candidate !== undefined);
+
+      if (interaction) {
+        interaction.action();
+        return;
+      }
+
+      const destination = new THREE.Vector3(
+        THREE.MathUtils.clamp(intersection.point.x, this.minTarget.x, this.maxTarget.x),
+        1.7,
+        THREE.MathUtils.clamp(intersection.point.z, this.minTarget.z, this.maxTarget.z),
+      );
+      const viewOffset = this.controls.target.clone().sub(this.instance.position);
+      this.navigationPosition = destination;
+      this.navigationTarget = destination.clone().add(viewOffset).clamp(this.minTarget, this.maxTarget);
+      this.lastUserInteraction = performance.now();
+      this.fallbackAngle = 0;
+    }, { passive: true });
   }
 }

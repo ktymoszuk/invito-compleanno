@@ -33,6 +33,13 @@ export class Walls {
     rightWall.rotation.y = -Math.PI / 2;
     rightWall.receiveShadow = true;
 
-    this.group.add(backWall, leftWall, rightWall);
+    // Parete frontale: visibile dall'interno ma invisibile alla camera esterna.
+    const frontMaterial = material.clone();
+    frontMaterial.side = THREE.BackSide;
+    const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(width, height), frontMaterial);
+    frontWall.position.set(0, height / 2, depth / 2);
+    frontWall.receiveShadow = true;
+
+    this.group.add(backWall, leftWall, rightWall, frontWall);
   }
 }

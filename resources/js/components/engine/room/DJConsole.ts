@@ -1,7 +1,13 @@
 import * as THREE from 'three';
+import { InteractivePulse } from './InteractivePulse';
 
 export class DJConsole {
   group: THREE.Group;
+  interactionPulse: InteractivePulse;
+  turntables: THREE.Group[] = [];
+
+  private platters: THREE.Group[] = [];
+  private scratchTime = 0;
 
   constructor() {
     this.group = new THREE.Group();
@@ -49,22 +55,31 @@ export class DJConsole {
     const platterGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.02, 32);
 
     [-0.6, 0.6].forEach((xOffset) => {
+      const turntable = new THREE.Group();
+      turntable.position.x = xOffset;
+
       // Base giradischi
       const ttBase = new THREE.Mesh(ttBaseGeo, metalMat);
-      ttBase.position.set(xOffset, 1.03, 0);
-      this.group.add(ttBase);
+      ttBase.position.set(0, 1.03, 0);
+      turntable.add(ttBase);
 
       // Piatto e Vinile nero
+      const rotatingPlatter = new THREE.Group();
+      rotatingPlatter.position.y = 1.07;
       const platter = new THREE.Mesh(platterGeo, vinylMat);
-      platter.position.set(xOffset, 1.07, 0);
-      this.group.add(platter);
+      rotatingPlatter.add(platter);
 
       // Centro del vinile (Etichetta colorata)
       const labelGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.022, 16);
       const labelMat = new THREE.MeshBasicMaterial({ color: xOffset < 0 ? 0x00d9ff : 0xff0055 });
       const label = new THREE.Mesh(labelGeo, labelMat);
-      label.position.set(xOffset, 1.07, 0);
-      this.group.add(label);
+      label.position.y = 0.012;
+      rotatingPlatter.add(label);
+
+      turntable.add(rotatingPlatter);
+      this.turntables.push(turntable);
+      this.platters.push(rotatingPlatter);
+      this.group.add(turntable);
     });
 
     // 3. MIXER CENTRALE CON LED LUMINOSI
@@ -95,9 +110,30 @@ export class DJConsole {
       this.group.add(speaker);
     });
 
+    this.interactionPulse = new InteractivePulse();
+    this.interactionPulse.group.position.set(0, 0.5, 0.472);
+    this.group.add(this.interactionPulse.group);
+
     // 5. POSIZIONAMENTO NELL'ANGOLO FONDO-DESTRA
     // Mettiamo il banco a X = 3.6, Z = -3.6 e lo ruotiamo verso il centro della stanza
     this.group.position.set(3.5, 0, -3.5);
     this.group.rotation.y = -Math.PI / 4; // Ruotato a 45° nell'angolo
+  }
+
+  update(delta: number) {
+    this.interactionPulse.update(delta);
+    this.scratchTime = Math.max(0, this.scratchTime - delta);
+    const speed = this.scratchTime > 0 ? 18 : 1.8;
+    this.platters.forEach((platter, index) => {
+      platter.rotation.y += delta * speed * (index === 0 ? 1 : -1);
+    });
+  }
+
+  setPlaying(playing: boolean) {
+    this.interactionPulse.setActive(playing);
+  }
+
+  scratch() {
+    this.scratchTime = 1.1;
   }
 }

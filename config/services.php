@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'inviti_admin' => [
+        'email' => env('EMAIL'),
+        'password' => env('PASSWORD'),
+    ],
+
 ];

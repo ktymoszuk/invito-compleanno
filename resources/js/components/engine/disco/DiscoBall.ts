@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 
 interface WallSpot {
-  mesh: THREE.Mesh;
-  angle: number;       // Angolo orizzontale orario rispetto alla palla
-  heightRatio: number; // Tendenza verticale (altezza/inclinazione del raggio)
-  distanceRatio: number;
+  angle: number;
+  heightRatio: number;
+  scale: number;
 }
 
 export class DiscoBall {
@@ -13,20 +12,23 @@ export class DiscoBall {
   cubeRenderTarget: THREE.WebGLCubeRenderTarget;
   cubeCamera: THREE.CubeCamera;
   private wallSpots: WallSpot[] = [];
+  private wallSpotMesh: THREE.InstancedMesh;
+  private spotTransform = new THREE.Object3D();
+  private reflectionElapsed = 0.25;
 
   constructor() {
     this.group = new THREE.Group();
 
     // 1. CUBE CAMERA PER RIFLESSI IN TEMPO REALE
-    this.cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256, {
-      generateMipmaps: true,
-      minFilter: THREE.LinearMipmapLinearFilter,
+    this.cubeRenderTarget = new THREE.WebGLCubeRenderTarget(128, {
+      generateMipmaps: false,
+      minFilter: THREE.LinearFilter,
     });
     this.cubeCamera = new THREE.CubeCamera(0.1, 50, this.cubeRenderTarget);
 
     // 2. DISCO BALL AD ALTA DENSITÀ
-    const radius = 0.85;
-    const ballGeometry = new THREE.SphereGeometry(radius, 128, 64);
+    const radius = 0.68;
+    const ballGeometry = new THREE.SphereGeometry(radius, 96, 48);
     const ballMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       metalness: 1.0,
@@ -40,10 +42,10 @@ export class DiscoBall {
     this.ballMesh.castShadow = true;
 
     // Cavo al soffitto
-    const wireGeo = new THREE.CylinderGeometry(0.008, 0.008, 1.8);
+    const wireGeo = new THREE.CylinderGeometry(0.008, 0.008, 1.15);
     const wireMat = new THREE.MeshStandardMaterial({ color: 0x777777, metalness: 0.8 });
     const wire = new THREE.Mesh(wireGeo, wireMat);
-    wire.position.y = 0.9;
+    wire.position.y = 0.575;
 
     this.group.add(this.ballMesh, wire, this.cubeCamera);
 
@@ -62,39 +64,46 @@ export class DiscoBall {
     ctx.fillRect(0, 0, 128, 128);
 
     const texture = new THREE.CanvasTexture(canvas);
-    const spotGeo = new THREE.PlaneGeometry(0.35, 0.35); // Macchie leggermente più sottili
+    const spotGeo = new THREE.PlaneGeometry(0.42, 0.42);
     const spotMat = new THREE.MeshBasicMaterial({
       map: texture,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      opacity: 0.35, // Opacità molto ridotta per un effetto tenue e soffuso
+      opacity: 0.48,
     });
 
-    // 4. LUCI PROIETTATE A 360°
-    const spotsCount = 220;
-    
-    for (let i = 0; i < spotsCount; i++) {
-      const spotMesh = new THREE.Mesh(spotGeo, spotMat);
-      this.group.add(spotMesh);
+    // 4. RIFLESSI DISPOSTI IN FASCE REGOLARI COME LE TESSERE DELLA SFERA
+    const latitudeBands = [-1.45, -1.2, -1, -0.82, -0.64, -0.48, -0.32, -0.16, 0.16, 0.34, 0.54, 0.76];
+    const spotsPerBand = 32;
+    this.wallSpotMesh = new THREE.InstancedMesh(spotGeo, spotMat, latitudeBands.length * spotsPerBand);
+    this.wallSpotMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.wallSpotMesh.frustumCulled = false;
+    this.group.add(this.wallSpotMesh);
 
-      this.wallSpots.push({
-        mesh: spotMesh,
-        angle: Math.random() * Math.PI * 2,
-        heightRatio: (Math.random() - 0.5) * 2.2,
-        distanceRatio: 0.8 + Math.random() * 0.4,
-      });
-    }
+    latitudeBands.forEach((heightRatio, bandIndex) => {
+      for (let spotIndex = 0; spotIndex < spotsPerBand; spotIndex++) {
+        const stagger = bandIndex % 2 === 0 ? 0 : Math.PI / spotsPerBand;
+
+        this.wallSpots.push({
+          angle: (spotIndex / spotsPerBand) * Math.PI * 2 + stagger,
+          heightRatio,
+          scale: 0.82 + (bandIndex % 3) * 0.08,
+        });
+      }
+    });
 
     // Posizione fisica della Disco Ball nel mondo (Z = -2.8)
-    this.group.position.set(0, 3.4, -2.8);
+    this.group.position.set(0, 4.05, -2.8);
   }
 
   update(delta: number, renderer?: THREE.WebGLRenderer, scene?: THREE.Scene) {
-    if (renderer && scene) {
+    this.reflectionElapsed += delta;
+    if (renderer && scene && this.reflectionElapsed >= 0.25) {
       this.ballMesh.visible = false;
       this.cubeCamera.update(renderer, scene);
       this.ballMesh.visible = true;
+      this.reflectionElapsed = 0;
     }
 
     // Velocità di rotazione coerente della palla
@@ -104,11 +113,11 @@ export class DiscoBall {
     // Dimensioni fisiche della stanza per le collisioni sulle pareti
     const halfW = 4.85;
     const halfD = 4.85;
-    const floorY = -3.3;
-    const ceilY = 1.4;
+    const floorY = -3.95;
+    const ceilY = 0.75;
 
     // AGGIORNAMENTO DI TUTTE LE MACCHIE IN UNISONO
-    this.wallSpots.forEach((spot) => {
+    this.wallSpots.forEach((spot, index) => {
       spot.angle += delta * rotationSpeed;
 
       const dirX = Math.sin(spot.angle);
@@ -139,19 +148,24 @@ export class DiscoBall {
       const posY = dirY * scale;
       const posZ = dirZ * scale;
 
-      spot.mesh.position.set(posX, posY, posZ);
+      this.spotTransform.position.set(posX, posY, posZ);
+      this.spotTransform.scale.setScalar(spot.scale);
 
       if (Math.abs(posX - halfW) < 0.05) {
-        spot.mesh.rotation.set(0, -Math.PI / 2, 0);
+        this.spotTransform.rotation.set(0, -Math.PI / 2, 0);
       } else if (Math.abs(posX + halfW) < 0.05) {
-        spot.mesh.rotation.set(0, Math.PI / 2, 0);
+        this.spotTransform.rotation.set(0, Math.PI / 2, 0);
       } else if (Math.abs(posY - ceilY) < 0.05) {
-        spot.mesh.rotation.set(Math.PI / 2, 0, 0);
+        this.spotTransform.rotation.set(Math.PI / 2, 0, 0);
       } else if (Math.abs(posY - floorY) < 0.05) {
-        spot.mesh.rotation.set(-Math.PI / 2, 0, 0);
+        this.spotTransform.rotation.set(-Math.PI / 2, 0, 0);
       } else {
-        spot.mesh.rotation.set(0, 0, 0);
+        this.spotTransform.rotation.set(0, 0, 0);
       }
+
+      this.spotTransform.updateMatrix();
+      this.wallSpotMesh.setMatrixAt(index, this.spotTransform.matrix);
     });
+    this.wallSpotMesh.instanceMatrix.needsUpdate = true;
   }
 }

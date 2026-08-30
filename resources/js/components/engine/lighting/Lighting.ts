@@ -3,6 +3,8 @@ import * as THREE from 'three';
 export class Lighting {
   group: THREE.Group;
   cameraSpotLight: THREE.SpotLight;
+  private cornerLights: THREE.PointLight[] = [];
+  private paletteIndex = 0;
 
   constructor() {
     this.group = new THREE.Group();
@@ -16,7 +18,7 @@ export class Lighting {
     this.cameraSpotLight.target.position.set(0, 3.6, -2.8);
     this.cameraSpotLight.angle = Math.PI / 7;
     this.cameraSpotLight.penumbra = 0.5;
-    this.cameraSpotLight.castShadow = true;
+    this.cameraSpotLight.castShadow = window.innerWidth > 768;
 
     // 3. LUCI NEON NEGLI ANGOLI
     const cornerCyan = new THREE.PointLight(0x00d9ff, 18, 16, 1.2);
@@ -30,6 +32,7 @@ export class Lighting {
 
     const cornerPink = new THREE.PointLight(0xff0044, 18, 16, 1.2);
     cornerPink.position.set(4.2, 3.0, 3.5);
+    this.cornerLights = [cornerCyan, cornerFuchsia, cornerPurple, cornerPink];
 
     // 4. UPLIGHT SOFFITTO
     const ceilingUpLight = new THREE.PointLight(0xb500ff, 15, 14);
@@ -45,5 +48,16 @@ export class Lighting {
       cornerPink,
       ceilingUpLight
     );
+  }
+
+  cyclePalette() {
+    const palettes = [
+      [0x00d9ff, 0xff0088, 0x9d00ff, 0xff0044],
+      [0xffd83d, 0xff5b2e, 0x65ff75, 0x00d9ff],
+      [0x67f7e8, 0x356dff, 0xff4f9a, 0xffffff],
+      [0xb8ff42, 0xff287f, 0xffd84d, 0x8f6bff],
+    ];
+    this.paletteIndex = (this.paletteIndex + 1) % palettes.length;
+    this.cornerLights.forEach((light, index) => light.color.setHex(palettes[this.paletteIndex][index]));
   }
 }

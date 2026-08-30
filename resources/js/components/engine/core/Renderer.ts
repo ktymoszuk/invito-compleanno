@@ -9,7 +9,7 @@ export class Renderer {
   }
 
   private setInstance() {
-    this.instance = new THREE.WebGLRenderer({ antialias: true });
+    this.instance = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.instance.setSize(this.sizes.width, this.sizes.height);
     this.instance.setPixelRatio(this.sizes.pixelRatio);
     this.instance.shadowMap.enabled = true;

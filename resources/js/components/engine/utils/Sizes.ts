@@ -17,6 +17,7 @@ export class Sizes extends EventTarget {
   private update() {
     this.width = this.container.clientWidth;
     this.height = this.container.clientHeight;
-    this.pixelRatio = Math.min(window.devicePixelRatio, 2);
+    const maxPixelRatio = this.width <= 768 ? 1.35 : 1.5;
+    this.pixelRatio = Math.min(window.devicePixelRatio, maxPixelRatio);
   }
 }

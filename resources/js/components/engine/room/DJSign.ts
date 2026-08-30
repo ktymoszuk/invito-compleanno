@@ -2,6 +2,8 @@ import * as THREE from 'three';
 
 export class DJSign {
   group: THREE.Group;
+  private backWallElements: THREE.Object3D[] = [];
+  private rightWallElements: THREE.Object3D[] = [];
 
   constructor() {
     this.group = new THREE.Group();
@@ -56,8 +58,9 @@ export class DJSign {
       })
     );
     
-    meshText.position.set(3.4, 2.7, -4.95);
+    meshText.position.set(3.4, 3.85, -4.95);
     this.group.add(meshText);
+    this.backWallElements.push(meshText);
 
 
     // --- 2. SCRITTA "60" (Ancora più grande sulla parete opposta) ---
@@ -100,8 +103,65 @@ export class DJSign {
       })
     );
     
-    mesh60.position.set(4.95, 2.7, -3.8);
+    mesh60.position.set(4.95, 3.85, -3.8);
     mesh60.rotation.y = -Math.PI / 2;
     this.group.add(mesh60);
+    this.rightWallElements.push(mesh60);
+
+    // --- 3. "CELEBRATION" CONTINUA SULLE DUE PARETI ---
+    const createCelebrationHalf = (text: string, alignment: CanvasTextAlign) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 256;
+      const context = canvas.getContext('2d')!;
+
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.textAlign = alignment;
+      context.textBaseline = 'middle';
+      context.font = '600 174px "Trebuchet MS", sans-serif';
+      context.shadowColor = '#b8ff42';
+      context.shadowBlur = 38;
+      context.lineWidth = 5;
+      context.strokeStyle = '#b8ff42';
+
+      const x = alignment === 'right' ? canvas.width - 12 : 12;
+      context.strokeText(text, x, canvas.height / 2);
+
+      context.shadowColor = '#ffffff';
+      context.shadowBlur = 10;
+      context.fillStyle = '#f4ffd8';
+      context.fillText(text, x, canvas.height / 2);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+
+      return new THREE.Mesh(
+        new THREE.PlaneGeometry(3.2, 0.8),
+        new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        })
+      );
+    };
+
+    const celeb = createCelebrationHalf('CELEB', 'right');
+    celeb.position.set(3.35, 3.1, -4.94);
+
+    const ration = createCelebrationHalf('RATION', 'left');
+    ration.position.set(4.94, 3.1, -3.35);
+    ration.rotation.y = -Math.PI / 2;
+
+    this.group.add(celeb, ration);
+    this.backWallElements.push(celeb);
+    this.rightWallElements.push(ration);
+  }
+
+  updateVisibility(cameraPosition: THREE.Vector3) {
+    const backWallVisible = cameraPosition.z > -4.95;
+    const rightWallVisible = cameraPosition.x < 4.95;
+    this.backWallElements.forEach(element => { element.visible = backWallVisible; });
+    this.rightWallElements.forEach(element => { element.visible = rightWallVisible; });
   }
 }

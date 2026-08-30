@@ -44,6 +44,27 @@ export class Floor {
         this.mesh.add(tileMesh);
       }
     }
+
+    // 3. LOGO CENTRALE SULLA PISTA
+    const logoTexture = new THREE.TextureLoader().load('/images/totem.png');
+    logoTexture.colorSpace = THREE.SRGBColorSpace;
+    logoTexture.anisotropy = 8;
+
+    const logoMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(5.0, 4.88),
+      new THREE.MeshBasicMaterial({
+        map: logoTexture,
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      })
+    );
+
+    logoMesh.rotation.x = -Math.PI / 2;
+    logoMesh.position.set(0, 0.025, 0.45);
+    logoMesh.renderOrder = 2;
+    this.mesh.add(logoMesh);
   }
 
   // Metodo vuoto per mantenere la compatibilità con il loop di Room

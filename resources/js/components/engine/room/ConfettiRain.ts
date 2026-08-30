@@ -3,10 +3,13 @@ import * as THREE from 'three';
 export class ConfettiRain {
   group: THREE.Group;
   private particles: {
-    mesh: THREE.Mesh;
+    position: THREE.Vector3;
+    rotation: THREE.Euler;
     velocity: THREE.Vector3;
     rotSpeed: THREE.Vector3;
   }[] = [];
+  private mesh: THREE.InstancedMesh;
+  private transform = new THREE.Object3D();
   private count = 150;
   private roomSize = 10;
   private roomHeight = 4;
@@ -23,16 +26,17 @@ export class ConfettiRain {
       side: THREE.DoubleSide,
       emissive: 0x222222,
     });
+    this.mesh = new THREE.InstancedMesh(geometry, material, this.count);
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.frustumCulled = false;
+    this.group.add(this.mesh);
 
     for (let i = 0; i < this.count; i++) {
-      const mesh = new THREE.Mesh(geometry, material);
-
       const x = (Math.random() - 0.5) * (this.roomSize - 1);
       const y = Math.random() * this.roomHeight;
       const z = (Math.random() - 0.5) * (this.roomSize - 1);
-      mesh.position.set(x, y, z);
-
-      mesh.rotation.set(
+      const position = new THREE.Vector3(x, y, z);
+      const rotation = new THREE.Euler(
         Math.random() * Math.PI,
         Math.random() * Math.PI,
         Math.random() * Math.PI
@@ -50,8 +54,7 @@ export class ConfettiRain {
         (Math.random() - 0.5) * 2
       );
 
-      this.group.add(mesh);
-      this.particles.push({ mesh, velocity, rotSpeed });
+      this.particles.push({ position, rotation, velocity, rotSpeed });
     }
 
     // Avvia l'orologio
@@ -62,18 +65,24 @@ export class ConfettiRain {
   update() {
     const delta = this.clock.getDelta();
 
-    this.particles.forEach((p) => {
-      p.mesh.position.addScaledVector(p.velocity, delta);
+    this.particles.forEach((particle, index) => {
+      particle.position.addScaledVector(particle.velocity, delta);
 
-      p.mesh.rotation.x += p.rotSpeed.x * delta;
-      p.mesh.rotation.y += p.rotSpeed.y * delta;
-      p.mesh.rotation.z += p.rotSpeed.z * delta;
+      particle.rotation.x += particle.rotSpeed.x * delta;
+      particle.rotation.y += particle.rotSpeed.y * delta;
+      particle.rotation.z += particle.rotSpeed.z * delta;
 
-      if (p.mesh.position.y <= 0) {
-        p.mesh.position.y = this.roomHeight;
-        p.mesh.position.x = (Math.random() - 0.5) * (this.roomSize - 1);
-        p.mesh.position.z = (Math.random() - 0.5) * (this.roomSize - 1);
+      if (particle.position.y <= 0) {
+        particle.position.y = this.roomHeight;
+        particle.position.x = (Math.random() - 0.5) * (this.roomSize - 1);
+        particle.position.z = (Math.random() - 0.5) * (this.roomSize - 1);
       }
+
+      this.transform.position.copy(particle.position);
+      this.transform.rotation.copy(particle.rotation);
+      this.transform.updateMatrix();
+      this.mesh.setMatrixAt(index, this.transform.matrix);
     });
+    this.mesh.instanceMatrix.needsUpdate = true;
   }
 }

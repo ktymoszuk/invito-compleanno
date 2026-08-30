@@ -97,26 +97,31 @@ export class CountdownBoard {
 
     const centerX = this.canvas.width / 2;
 
-    // 1. SCRITTA SUPERIORE: "ALLA FESTA MANCANO:" (Stessa dimensione 130px)
-    this.ctx.font = '900 130px "Courier New", monospace';
+    // 1. TITOLO E DATA DELL'EVENTO
+    this.ctx.font = '900 92px "Courier New", monospace';
     this.ctx.textAlign = 'center';
     this.ctx.shadowColor = '#ff0055';
     this.ctx.shadowBlur = 25;
     this.ctx.fillStyle = '#ff88aa';
-    this.ctx.fillText('ALLA FESTA MANCANO:', centerX, 175);
+    this.ctx.fillText('ALLA FESTA MANCANO:', centerX, 115);
+
+    this.ctx.font = '700 68px "Courier New", monospace';
+    this.ctx.shadowBlur = 14;
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillText('30 OTTOBRE 2026 · 21:30', centerX, 225);
 
     // 2. SFONDO LED SPENTO (Ghosting) per il countdown
-    this.ctx.font = '900 130px "Courier New", monospace';
+    this.ctx.font = '900 122px "Courier New", monospace';
     this.ctx.fillStyle = 'rgba(40, 0, 20, 0.4)';
     this.ctx.shadowBlur = 0;
-    this.ctx.fillText('88d  88h  88m  88s', centerX, 385);
+    this.ctx.fillText('88d  88h  88m  88s', centerX, 415);
 
     // 3. NUMERI DEL COUNTDOWN ATTIVI
-    this.ctx.font = '900 130px "Courier New", monospace';
+    this.ctx.font = '900 122px "Courier New", monospace';
     this.ctx.shadowColor = '#ff0055';
     this.ctx.shadowBlur = 25;
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.fillText(timeString, centerX, 385);
+    this.ctx.fillText(timeString, centerX, 415);
 
     // Aggiorna la texture sulla GPU Three.js
     this.texture.needsUpdate = true;
@@ -131,5 +136,9 @@ export class CountdownBoard {
       this.lastSecond = currentSecond;
       this.updateText();
     }
+  }
+
+  updateVisibility(cameraPosition: THREE.Vector3) {
+    this.group.visible = cameraPosition.z > -4.85;
   }
 }

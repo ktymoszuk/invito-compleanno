@@ -14,11 +14,16 @@ export class RobotDJ {
   private body: THREE.Group;
   private leftArm: THREE.Group;
   private rightArm: THREE.Group;
+  private leftLeg: THREE.Group;
+  private rightLeg: THREE.Group;
+  private fingerPairs: THREE.Group[] = [];
+  private jetFlames: THREE.Group[] = [];
   private ledMaterials: THREE.MeshStandardMaterial[] = [];
   private notes: FloatingNote[] = [];
   private elapsed = 0;
   private playing = false;
   private paletteOffset = 0;
+  private performanceTime: number | null = null;
 
   constructor() {
     this.group = new THREE.Group();
@@ -113,21 +118,32 @@ export class RobotDJ {
 
     this.leftArm = this.createArm(-1, shellMaterial, darkMaterial);
     this.rightArm = this.createArm(1, shellMaterial, darkMaterial);
-    this.body.add(this.leftArm, this.rightArm);
+    this.leftLeg = this.createLeg(-1, shellMaterial, darkMaterial);
+    this.rightLeg = this.createLeg(1, shellMaterial, darkMaterial);
+    this.body.add(this.leftArm, this.rightArm, this.leftLeg, this.rightLeg);
 
     this.createNotes();
   }
 
   update(delta: number) {
     this.elapsed += delta;
-    this.body.position.y = Math.sin(this.elapsed * (this.playing ? 5.2 : 2.4)) * (this.playing ? 0.075 : 0.035);
-    this.body.rotation.y = Math.sin(this.elapsed * 1.35) * 0.055;
-    this.body.rotation.x = this.playing ? Math.sin(this.elapsed * 8) * 0.09 : 0;
-    const armSpread = this.playing
-      ? 1.32 + Math.sin(this.elapsed * 5.5) * 0.22
-      : 0.38 + (Math.sin(this.elapsed * 3.5) + 1) * 0.1;
-    this.leftArm.rotation.z = -armSpread;
-    this.rightArm.rotation.z = armSpread;
+    if (this.performanceTime !== null) {
+      this.performanceTime += delta;
+      this.updatePerformance(this.performanceTime);
+    } else {
+      this.body.position.y = Math.sin(this.elapsed * (this.playing ? 5.2 : 2.4)) * (this.playing ? 0.075 : 0.035);
+      this.body.rotation.y = Math.sin(this.elapsed * 1.35) * 0.055;
+      this.body.rotation.x = this.playing ? Math.sin(this.elapsed * 8) * 0.09 : 0;
+      const armSpread = this.playing
+        ? 1.32 + Math.sin(this.elapsed * 5.5) * 0.22
+        : 0.38 + (Math.sin(this.elapsed * 3.5) + 1) * 0.1;
+      this.leftArm.rotation.z = -armSpread;
+      this.rightArm.rotation.z = armSpread;
+      this.leftLeg.rotation.set(0, 0, 0);
+      this.rightLeg.rotation.set(0, 0, 0);
+      this.fingerPairs.forEach(fingers => { fingers.visible = false; });
+      this.jetFlames.forEach(flame => { flame.visible = false; });
+    }
 
     this.ledMaterials.forEach((material, index) => {
       const hue = (this.elapsed * 0.12 + index * 0.17 + this.paletteOffset) % 1;
@@ -160,6 +176,184 @@ export class RobotDJ {
     this.paletteOffset = (this.paletteOffset + 0.23) % 1;
   }
 
+  performDance() {
+    if (this.performanceTime !== null) return;
+    this.performanceTime = 0;
+    this.cycleLedPalette();
+  }
+
+  private updatePerformance(time: number) {
+    const danceFloorZ = 3.8;
+    this.body.position.set(0, 0, 0);
+    this.body.rotation.set(0, 0, 0);
+    this.leftLeg.rotation.set(0, 0, 0);
+    this.rightLeg.rotation.set(0, 0, 0);
+    this.leftArm.rotation.x = 0;
+    this.rightArm.rotation.x = 0;
+    this.fingerPairs.forEach(fingers => { fingers.visible = false; });
+    this.jetFlames.forEach(flame => { flame.visible = false; });
+
+    if (time < 0.45) {
+      const progress = time / 0.45;
+      this.group.position.set(0, 0, -0.42);
+      this.group.rotation.set(0, 0, 0);
+      this.body.position.y = -Math.sin(progress * Math.PI) * 0.16;
+      this.body.rotation.x = progress * 0.12;
+      this.leftArm.rotation.z = -0.25;
+      this.rightArm.rotation.z = 0.25;
+      this.leftLeg.rotation.x = -progress * 0.32;
+      this.rightLeg.rotation.x = -progress * 0.32;
+      return;
+    }
+
+    if (time < 2.35) {
+      const progress = (time - 0.45) / 1.9;
+      const horizontalProgress = THREE.MathUtils.smoothstep(progress, 0.12, 0.92);
+      const inverse = 1 - progress;
+      const height = inverse * inverse * 0 + 2 * inverse * progress * 3.8 + progress * progress * -0.5;
+      const flipProgress = THREE.MathUtils.smoothstep(progress, 0.34, 0.7);
+      this.group.position.set(0, height, THREE.MathUtils.lerp(-0.42, danceFloorZ, horizontalProgress));
+      this.group.rotation.set(-flipProgress * Math.PI * 2, 0, 0);
+      this.leftArm.rotation.z = -1.65;
+      this.rightArm.rotation.z = 1.65;
+      this.leftLeg.rotation.x = -Math.sin(progress * Math.PI) * 0.55;
+      this.rightLeg.rotation.x = -Math.sin(progress * Math.PI) * 0.55;
+      return;
+    }
+
+    this.group.position.set(0, -0.5, danceFloorZ);
+    this.group.rotation.set(0, 0, 0);
+
+    if (time < 3.35) {
+      const progress = (time - 2.35) / 1;
+      const settle = Math.sin(Math.min(progress / 0.28, 1) * Math.PI) * 0.1;
+      this.body.position.y = -0.38 - settle;
+      this.leftLeg.rotation.z = -Math.PI / 2;
+      this.rightLeg.rotation.z = Math.PI / 2;
+      this.leftArm.rotation.z = -1.45;
+      this.rightArm.rotation.z = 1.45;
+      return;
+    }
+
+    if (time < 4.1) {
+      const progress = THREE.MathUtils.smoothstep((time - 3.35) / 0.75, 0, 1);
+      this.body.position.y = THREE.MathUtils.lerp(-0.38, 0, progress);
+      this.leftLeg.rotation.z = THREE.MathUtils.lerp(-Math.PI / 2, 0, progress);
+      this.rightLeg.rotation.z = THREE.MathUtils.lerp(Math.PI / 2, 0, progress);
+      this.leftArm.rotation.z = THREE.MathUtils.lerp(-1.45, -0.5, progress);
+      this.rightArm.rotation.z = THREE.MathUtils.lerp(1.45, 0.5, progress);
+      return;
+    }
+
+    if (time < 6.2) {
+      const danceTime = time - 4.1;
+      const pointRight = Math.sin(danceTime * Math.PI * 1.6) >= 0;
+      const bounce = Math.abs(Math.sin(danceTime * Math.PI * 3.2));
+      this.body.position.y = bounce * 0.1;
+      this.body.rotation.set(0, pointRight ? -0.22 : 0.22, pointRight ? -0.12 : 0.12);
+      this.leftArm.rotation.z = pointRight ? -0.62 : -2.35;
+      this.rightArm.rotation.z = pointRight ? 2.35 : 0.62;
+      this.leftLeg.rotation.x = pointRight ? -0.28 : 0.1;
+      this.rightLeg.rotation.x = pointRight ? 0.1 : -0.28;
+      return;
+    }
+
+    if (time < 7.9) {
+      const gestureTime = time - 6.2;
+      const leftHandAtEyes = Math.floor(gestureTime / 0.42) % 2 === 0;
+      const sweep = Math.sin((gestureTime % 0.42) / 0.42 * Math.PI);
+      this.body.position.y = Math.abs(Math.sin(gestureTime * Math.PI * 3)) * 0.06;
+      this.body.rotation.y = (leftHandAtEyes ? 1 : -1) * 0.08 * sweep;
+      this.leftArm.rotation.z = leftHandAtEyes ? 2.28 - sweep * 0.18 : -0.72;
+      this.rightArm.rotation.z = leftHandAtEyes ? 0.72 : -2.28 + sweep * 0.18;
+      this.leftArm.rotation.x = leftHandAtEyes ? -0.32 : 0;
+      this.rightArm.rotation.x = leftHandAtEyes ? 0 : -0.32;
+      this.fingerPairs[0].visible = leftHandAtEyes;
+      this.fingerPairs[1].visible = !leftHandAtEyes;
+      this.leftLeg.rotation.x = -Math.sin(gestureTime * Math.PI * 2) * 0.18;
+      this.rightLeg.rotation.x = Math.sin(gestureTime * Math.PI * 2) * 0.18;
+      return;
+    }
+
+    if (time < 9.6) {
+      const danceTime = time - 7.9;
+      const step = Math.sin(danceTime * Math.PI * 4);
+      const pop = Math.sign(Math.sin(danceTime * Math.PI * 3));
+      this.body.position.y = Math.abs(step) * 0.12;
+      this.body.rotation.set(pop * 0.08, step * 0.28, -step * 0.1);
+      this.leftArm.rotation.z = -1.25 + pop * 0.55;
+      this.rightArm.rotation.z = 1.25 + pop * 0.55;
+      this.leftLeg.rotation.x = step * 0.55;
+      this.rightLeg.rotation.x = -step * 0.55;
+      return;
+    }
+
+    if (time < 10.3) {
+      const progress = (time - 9.6) / 0.7;
+      const lift = progress * progress;
+      this.group.position.set(0, THREE.MathUtils.lerp(-0.5, 1.35, lift), danceFloorZ);
+      this.group.rotation.set(-0.08 * (1 - progress), 0, 0);
+      this.body.position.y = -Math.sin(progress * Math.PI) * 0.12;
+      this.leftArm.rotation.z = -0.55;
+      this.rightArm.rotation.z = 0.55;
+      this.leftLeg.rotation.x = -0.18 * (1 - progress);
+      this.rightLeg.rotation.x = -0.18 * (1 - progress);
+      this.setJetFlames(0.45 + progress * 0.55);
+      return;
+    }
+
+    if (time < 12.4) {
+      const progress = (time - 10.3) / 2.1;
+      const travel = progress * progress * (3 - 2 * progress);
+      this.group.position.set(0, 1.35 + Math.sin(progress * Math.PI) * 0.65, THREE.MathUtils.lerp(danceFloorZ, -0.42, travel));
+      this.group.rotation.set(-Math.sin(progress * Math.PI) * 0.12, 0, 0);
+      this.leftArm.rotation.z = -0.72 + Math.sin(progress * Math.PI * 2) * 0.08;
+      this.rightArm.rotation.z = 0.72 - Math.sin(progress * Math.PI * 2) * 0.08;
+      this.setJetFlames(0.9 + Math.sin(this.elapsed * 28) * 0.1);
+      return;
+    }
+
+    if (time < 13.15) {
+      const progress = (time - 12.4) / 0.75;
+      const descent = progress * progress * (3 - 2 * progress);
+      this.group.position.set(0, THREE.MathUtils.lerp(1.35, 0, descent), -0.42);
+      this.group.rotation.set(0, 0, 0);
+      this.leftArm.rotation.z = -0.5;
+      this.rightArm.rotation.z = 0.5;
+      this.setJetFlames(Math.max(0.15, 1 - progress));
+      return;
+    }
+
+    if (time < 13.6) {
+      const progress = (time - 13.15) / 0.45;
+      this.group.position.set(0, 0, -0.42);
+      this.group.rotation.set(0, 0, 0);
+      this.body.position.y = -Math.sin(progress * Math.PI) * 0.11;
+      this.leftArm.rotation.z = -0.5;
+      this.rightArm.rotation.z = 0.5;
+      return;
+    }
+
+    this.performanceTime = null;
+    this.group.position.set(0, 0, -0.42);
+    this.group.rotation.set(0, 0, 0);
+    this.body.position.set(0, 0, 0);
+    this.body.rotation.set(0, 0, 0);
+    this.leftLeg.rotation.set(0, 0, 0);
+    this.rightLeg.rotation.set(0, 0, 0);
+    this.leftArm.rotation.x = 0;
+    this.rightArm.rotation.x = 0;
+    this.jetFlames.forEach(flame => { flame.visible = false; });
+  }
+
+  private setJetFlames(intensity: number) {
+    this.jetFlames.forEach((flame, index) => {
+      const flicker = 0.85 + Math.sin(this.elapsed * 34 + index * 2.4) * 0.15;
+      flame.visible = true;
+      flame.scale.set(0.8 + intensity * 0.2, intensity * flicker, 0.8 + intensity * 0.2);
+    });
+  }
+
   private createLedMaterial(color: number) {
     const material = new THREE.MeshStandardMaterial({
       color,
@@ -182,8 +376,50 @@ export class RobotDJ {
 
     const hand = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), darkMaterial);
     hand.position.set(0, -0.52, 0.13);
-    arm.add(hand);
+    const fingers = new THREE.Group();
+    fingers.position.set(0, -0.57, 0.17);
+    [-0.035, 0.035].forEach(xPosition => {
+      const finger = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.018, 0.022, 0.2, 8),
+        new THREE.MeshStandardMaterial({ color: 0x67f7e8, emissive: 0x67f7e8, emissiveIntensity: 1.5 }),
+      );
+      finger.position.set(xPosition, -0.08, 0);
+      fingers.add(finger);
+    });
+    fingers.visible = false;
+    this.fingerPairs.push(fingers);
+    arm.add(hand, fingers);
     return arm;
+  }
+
+  private createLeg(side: -1 | 1, shellMaterial: THREE.Material, darkMaterial: THREE.Material) {
+    const leg = new THREE.Group();
+    leg.position.set(side * 0.22, 1.16, 0);
+
+    const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.105, 0.58, 14), shellMaterial);
+    shin.position.y = -0.27;
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.36), darkMaterial);
+    foot.position.set(0, -0.59, 0.1);
+    const jetFlame = new THREE.Group();
+    jetFlame.position.set(0, -0.8, 0.08);
+    const outerFlame = new THREE.Mesh(
+      new THREE.ConeGeometry(0.145, 0.64, 14),
+      new THREE.MeshBasicMaterial({ color: 0xff3f8f, transparent: true, opacity: 0.92 }),
+    );
+    const innerFlame = new THREE.Mesh(
+      new THREE.ConeGeometry(0.078, 0.46, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1 }),
+    );
+    outerFlame.rotation.z = Math.PI;
+    innerFlame.rotation.z = Math.PI;
+    innerFlame.position.y = 0.03;
+    const jetLight = new THREE.PointLight(0xff4f9a, 5.5, 3.4, 1.5);
+    jetLight.position.y = -0.22;
+    jetFlame.add(outerFlame, innerFlame, jetLight);
+    jetFlame.visible = false;
+    this.jetFlames.push(jetFlame);
+    leg.add(shin, foot, jetFlame);
+    return leg;
   }
 
   private createNotes() {

@@ -5,7 +5,7 @@
     <Transition name="welcome">
       <section v-if="showWelcome" class="welcome-screen" aria-labelledby="welcome-title">
         <div class="welcome-content">
-          <p class="welcome-eyebrow">60 CELEBRATION</p>
+          <p class="welcome-eyebrow">66 CELEBRATION</p>
           <h1 id="welcome-title">UN INVITO<br />PER TE</h1>
 
           <div class="explore-globe" aria-hidden="true">
@@ -14,14 +14,62 @@
             <span class="globe-core material-symbols-rounded">open_with</span>
           </div>
 
-          <p class="welcome-hint">MUOVITI · GUARDA · ESPLORA</p>
-          <button type="button" class="welcome-button" @click="showWelcome = false">
+          <p class="welcome-hint">Entra ed interagisci con gli oggetti</p>
+          <button type="button" class="welcome-button" @click="enterParty">
             Entra nella festa
             <span class="material-symbols-rounded">arrow_forward</span>
           </button>
         </div>
       </section>
     </Transition>
+
+    <aside
+      v-if="hasEntered"
+      class="music-player"
+      :class="{ minimized: isMusicPlayerMinimized }"
+      aria-label="Controlli musica"
+      @pointerdown.capture="wakeMusicPlayer"
+      @focusin="wakeMusicPlayer"
+    >
+      <a
+        class="album-link"
+        href="https://open.spotify.com/intl-it/track/2C1cH4RmDkUBuFGVZN8T10?si=ef9c2b271c124b8d"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Apri Bacio che schiocca su Spotify"
+        aria-label="Apri Bacio che schiocca su Spotify"
+      >
+        <img :src="'/images/bacio_che_schiocca.png'" alt="Copertina di Bacio che schiocca" />
+        <img class="spotify-badge" :src="'/images/spotify.webp'" alt="" aria-hidden="true" />
+      </a>
+      <div class="track-info">
+        <strong>Bacio che schiocca</strong>
+        <span>Marco Rossi</span>
+      </div>
+      <button
+        type="button"
+        class="player-control"
+        :title="isMusicPlaying ? 'Pausa' : 'Riproduci'"
+        :aria-label="isMusicPlaying ? 'Metti in pausa' : 'Riproduci'"
+        @click="toggleMusic"
+      >
+        <span class="material-symbols-rounded">{{ isMusicPlaying ? 'pause' : 'play_arrow' }}</span>
+      </button>
+      <label class="volume-control">
+        <span class="material-symbols-rounded" aria-hidden="true">{{ musicVolume === 0 ? 'volume_off' : 'volume_up' }}</span>
+        <input
+          v-model.number="musicVolume"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          aria-label="Volume musica"
+          :style="{ '--volume-level': `${musicVolume}%` }"
+          @input="changeMusicVolume"
+        />
+        <output>{{ musicVolume }}%</output>
+      </label>
+    </aside>
 
     <button
       id="info-btn"
@@ -40,7 +88,7 @@
 
         <div class="drawer-body">
           <div v-if="activeSection === 'info'">
-            <p class="eyebrow" style="font-size: 1.2rem; margin: 0;">60 CELEBRATION</p>
+            <p class="eyebrow" style="font-size: 1.2rem; margin: 0;">66 CELEBRATION</p>
             <h2 class="panel-title">INGRESSO LIBERO</h2>
             <p class="subtitle" style="font-size: 1.2rem; margin-top: 0;">Massimo 300 ingressi</p>
 
@@ -65,10 +113,11 @@
             <div v-if="showSuccess" class="status-panel success-section">
               <span class="material-symbols-rounded">check_circle</span>
               <strong>Richiesta inviata</strong>
-              <p>Ci vediamo in pista, {{ firstName }}.</p>
+              <p>Registrazione avvenuta con successo. Ci vediamo in pista, {{ registeredFirstName }}.</p>
             </div>
+            <p v-if="showSuccess" class="add-person-hint">Aggiungi un altra persona</p>
 
-            <form v-else @submit.prevent="submitRsvp">
+            <form @submit.prevent="submitRsvp">
               <label class="input-group">
                 <span>Nome</span>
                 <input v-model.trim="firstName" maxlength="50" autocomplete="given-name" required class="input-field" />
@@ -86,6 +135,11 @@
                 {{ isSubmitting ? 'Invio in corso...' : 'Invia richiesta' }}
               </button>
             </form>
+
+            <button class="guest-list-button" type="button" @click="selectSection('guests')">
+              <span class="material-symbols-rounded">groups</span>
+              Lista invitati
+            </button>
           </div>
 
           <div v-else-if="activeSection === 'guests'">
@@ -227,9 +281,14 @@ const canvasContainer = ref<HTMLDivElement | null>(null);
 let engine: RoomEngine | null = null;
 
 const showWelcome = ref(true);
+const hasEntered = ref(false);
+const isMusicPlaying = ref(false);
+const isMusicPlayerMinimized = ref(false);
+const musicVolume = ref(50);
 const isOpen = ref(false);
 const activeSection = ref<Section>('info');
 const showSuccess = ref(false);
+const registeredFirstName = ref('');
 const firstName = ref('');
 const lastName = ref('');
 const invitedBy = ref('');
@@ -246,6 +305,7 @@ const updatingGuestId = ref<number | null>(null);
 const updatingGuestStatus = ref<1 | 2 | null>(null);
 const guestSearch = ref('');
 const statusFilter = ref<'all' | '0' | '1' | '2'>('all');
+let musicPlayerInactivityTimer: number | null = null;
 
 const navigationItems: Array<{ id: Section; icon: string; label: string }> = [
   { id: 'info', icon: 'info', label: 'Info' },
@@ -299,6 +359,34 @@ const filteredGuests = computed(() => {
 
 const openDrawer = () => {
   isOpen.value = true;
+};
+
+const scheduleMusicPlayerMinimize = () => {
+  if (musicPlayerInactivityTimer !== null) window.clearTimeout(musicPlayerInactivityTimer);
+  musicPlayerInactivityTimer = window.setTimeout(() => {
+    isMusicPlayerMinimized.value = true;
+    musicPlayerInactivityTimer = null;
+  }, 5000);
+};
+
+const wakeMusicPlayer = () => {
+  isMusicPlayerMinimized.value = false;
+  scheduleMusicPlayerMinimize();
+};
+
+const enterParty = () => {
+  showWelcome.value = false;
+  hasEntered.value = true;
+  scheduleMusicPlayerMinimize();
+  void engine?.startMusicWithFade();
+};
+
+const toggleMusic = () => {
+  engine?.toggleMusic();
+};
+
+const changeMusicVolume = () => {
+  engine?.setMusicVolume(musicVolume.value / 100);
 };
 
 const closeDrawer = () => {
@@ -368,11 +456,11 @@ const submitRsvp = async () => {
     });
 
     engine?.triggerConfetti();
+    registeredFirstName.value = firstName.value;
+    showSuccess.value = true;
     firstName.value = '';
     lastName.value = '';
     invitedBy.value = '';
-    activeSection.value = 'guests';
-    await loadGuests();
   } catch {
     formError.value = 'Non è stato possibile inviare la richiesta. Riprova.';
   } finally {
@@ -434,10 +522,14 @@ const updateGuestStatus = async (guest: Guest, approved: 0 | 1 | 2) => {
 onMounted(() => {
   if (canvasContainer.value) {
     engine = new RoomEngine(canvasContainer.value);
+    engine.onMusicStateChange(playing => {
+      isMusicPlaying.value = playing;
+    });
   }
 });
 
 onUnmounted(() => {
+  if (musicPlayerInactivityTimer !== null) window.clearTimeout(musicPlayerInactivityTimer);
   engine?.destroy();
 });
 </script>
@@ -588,6 +680,208 @@ onUnmounted(() => {
 
 .welcome-leave-to .welcome-content {
   transform: scale(1.04);
+}
+
+.music-player {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  z-index: 120;
+  display: grid;
+  grid-template-columns: 58px minmax(120px, 1fr) 46px;
+  grid-template-rows: 42px 18px;
+  grid-template-areas:
+    'cover info play'
+    'cover volume volume';
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 7px;
+  width: min(390px, calc(100vw - 44px));
+  height: 89px;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: rgba(15, 18, 17, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.42);
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  transition:
+    width 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    padding 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    column-gap 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    row-gap 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    grid-template-columns 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    grid-template-rows 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.48s ease;
+}
+
+.music-player.minimized {
+  grid-template-columns: 46px 0fr 42px;
+  grid-template-rows: 46px 0;
+  column-gap: 8px;
+  row-gap: 0;
+  width: 114px;
+  height: 64px;
+  padding: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.36);
+}
+
+.music-player.minimized .album-link {
+  width: 46px;
+  height: 46px;
+}
+
+.music-player.minimized .track-info,
+.music-player.minimized .volume-control {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(12px);
+  pointer-events: none;
+}
+
+.album-link {
+  position: relative;
+  grid-area: cover;
+  width: 58px;
+  height: 58px;
+  border-radius: 4px;
+}
+
+.album-link > img:first-child {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.album-link::after {
+  position: absolute;
+  bottom: -3px;
+  left: -3px;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  content: '';
+  transition: opacity 0.2s ease, transform 0.4s ease, visibility 0.2s;
+}
+
+.spotify-badge {
+  position: absolute;
+  bottom: -2px;
+  left: -2px;
+  z-index: 2;
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  transition: opacity 0.2s ease, transform 0.4s ease, visibility 0.2s;
+}
+
+.music-player.minimized .spotify-badge,
+.music-player.minimized .album-link::after {
+  visibility: hidden;
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+.track-info {
+  grid-area: info;
+  min-width: 0;
+  transition: opacity 0.2s ease, transform 0.4s ease, visibility 0.2s;
+}
+
+.track-info strong,
+.track-info span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-info strong {
+  color: #67f7e8;
+  font-size: 14px;
+}
+
+.track-info span {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 11px;
+}
+
+.player-control {
+  grid-area: play;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  background: #67f7e8;
+  border: 0;
+  border-radius: 50%;
+  color: #07120b;
+  cursor: pointer;
+}
+
+.player-control .material-symbols-rounded {
+  font-size: 28px;
+}
+
+.volume-control {
+  grid-area: volume;
+  display: grid;
+  grid-template-columns: 20px minmax(70px, 1fr) 38px;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  transition: opacity 0.2s ease, transform 0.4s ease, visibility 0.2s;
+}
+
+.volume-control .material-symbols-rounded {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 18px;
+}
+
+.volume-control input {
+  width: 100%;
+  height: 4px;
+  margin: 0;
+  appearance: none;
+  background: linear-gradient(to right, #67f7e8 var(--volume-level), rgba(255, 255, 255, 0.3) var(--volume-level));
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.volume-control input::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  appearance: none;
+  background: #ffffff;
+  border: 0;
+  border-radius: 50%;
+}
+
+.volume-control input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border: 0;
+  border-radius: 50%;
+}
+
+.volume-control output {
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 11px;
+  text-align: right;
 }
 
 @keyframes globe-float {
@@ -995,6 +1289,26 @@ onUnmounted(() => {
   opacity: 0.55;
 }
 
+.guest-list-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 50px;
+  margin-top: 14px;
+  padding: 12px 18px;
+  background: transparent;
+  border: 1px solid rgba(103, 247, 232, 0.7);
+  border-radius: 6px;
+  color: #67f7e8;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
 .error-message {
   margin: 0 0 14px;
   color: #ff9bbf;
@@ -1019,10 +1333,26 @@ onUnmounted(() => {
   font-size: 34px;
 }
 
+.success-section {
+  padding: 16px 14px;
+}
+
+.success-section p {
+  margin: 6px 0 0;
+}
+
 .success-section p,
 .empty-state {
   color: rgba(255, 255, 255, 0.72);
   font-size: 16px;
+}
+
+.add-person-hint {
+  margin: 10px 0 14px;
+  color: #67f7e8;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .guest-list {
@@ -1309,6 +1639,17 @@ onUnmounted(() => {
 }
 
 @media (max-width: 600px) {
+  .music-player {
+    top: 14px;
+    right: 14px;
+    width: calc(100vw - 28px);
+  }
+
+  .music-player.minimized {
+    right: 14px;
+    width: 114px;
+  }
+
   .drawer-content {
     max-height: 88dvh;
   }

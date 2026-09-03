@@ -8,107 +8,56 @@ export class DJSign {
   constructor() {
     this.group = new THREE.Group();
 
-    // --- 1. SCRITTA "MARCO ROSSI" (Allineata a destra, più grande, line-height ridotto) ---
-    const canvasText = document.createElement('canvas');
-    canvasText.width = 1200;
-    canvasText.height = 768;
-    const ctx = canvasText.getContext('2d')!;
+    // --- 1. "66" CONTINUO SULLE DUE PARETI ---
+    const createNumberHalf = (alignment: CanvasTextAlign) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 768;
+      const context = canvas.getContext('2d')!;
 
-    ctx.clearRect(0, 0, canvasText.width, canvasText.height);
-    
-    // Allineamento a destra sul canvas
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    
-    // Font ancora più grande
-    ctx.font = '400 160px "Trebuchet MS", sans-serif';
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.textAlign = alignment;
+      context.textBaseline = 'middle';
+      context.font = '600 540px "Trebuchet MS", sans-serif';
+      context.shadowColor = '#ff007f';
+      context.shadowBlur = 50;
+      context.lineWidth = 9;
+      context.strokeStyle = '#ff007f';
 
-    // Distanza verticale ridotta (line-height più basso)
-    const yMarco = 280;
-    const yRossi = 440;
-    const xPos = 1150; // Margine destro interno del canvas
+      const x = alignment === 'right' ? canvas.width - 12 : 12;
+      context.strokeText('6', x, canvas.height / 2);
 
-    // Effetto neon Glow esterno azzurro
-    ctx.shadowColor = '#00d9ff';
-    ctx.shadowBlur = 45;
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = '#00d9ff';
+      context.shadowBlur = 15;
+      context.shadowColor = '#ffffff';
+      context.fillStyle = '#ffe6f2';
+      context.fillText('6', x, canvas.height / 2);
 
-    ctx.strokeText('MARCO', xPos, yMarco);
-    ctx.strokeText('ROSSI', xPos, yRossi);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
 
-    // Nucleo centrale acceso bianco/azzurro
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = '#ffffff';
-    ctx.fillStyle = '#e0f7ff';
+      return new THREE.Mesh(
+        new THREE.PlaneGeometry(1.6, 2.4),
+        new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        })
+      );
+    };
 
-    ctx.fillText('MARCO', xPos, yMarco);
-    ctx.fillText('ROSSI', xPos, yRossi);
+    const firstSix = createNumberHalf('right');
+    firstSix.position.set(4.15, 4.05, -4.94);
 
-    const textureText = new THREE.CanvasTexture(canvasText);
-    textureText.minFilter = THREE.LinearFilter;
+    const secondSix = createNumberHalf('left');
+    secondSix.position.set(4.94, 4.05, -4.15);
+    secondSix.rotation.y = -Math.PI / 2;
 
-    const meshText = new THREE.Mesh(
-      new THREE.PlaneGeometry(3.4, 2.2),
-      new THREE.MeshBasicMaterial({ 
-        map: textureText, 
-        transparent: true, 
-        side: THREE.DoubleSide,
-        depthWrite: false 
-      })
-    );
-    
-    meshText.position.set(3.4, 3.85, -4.95);
-    this.group.add(meshText);
-    this.backWallElements.push(meshText);
+    this.group.add(firstSix, secondSix);
+    this.backWallElements.push(firstSix);
+    this.rightWallElements.push(secondSix);
 
-
-    // --- 2. SCRITTA "60" (Ancora più grande sulla parete opposta) ---
-    const canvas60 = document.createElement('canvas');
-    canvas60.width = 768;
-    canvas60.height = 768;
-    const ctx60 = canvas60.getContext('2d')!;
-
-    ctx60.clearRect(0, 0, canvas60.width, canvas60.height);
-    ctx60.textAlign = 'center';
-    ctx60.textBaseline = 'middle';
-    
-    // 60 ancora più grande e d'impatto
-    ctx60.font = '600 380px "Trebuchet MS", sans-serif';
-
-    // Effetto neon Glow magenta/viola
-    ctx60.shadowColor = '#ff007f';
-    ctx60.shadowBlur = 50;
-    ctx60.lineWidth = 9;
-    ctx60.strokeStyle = '#ff007f';
-
-    ctx60.strokeText('60', canvas60.width / 2, canvas60.height / 2);
-
-    ctx60.shadowBlur = 15;
-    ctx60.shadowColor = '#ffffff';
-    ctx60.fillStyle = '#ffe6f2';
-
-    ctx60.fillText('60', canvas60.width / 2, canvas60.height / 2);
-
-    const texture60 = new THREE.CanvasTexture(canvas60);
-    texture60.minFilter = THREE.LinearFilter;
-
-    const mesh60 = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.4, 2.4),
-      new THREE.MeshBasicMaterial({ 
-        map: texture60, 
-        transparent: true, 
-        side: THREE.DoubleSide,
-        depthWrite: false 
-      })
-    );
-    
-    mesh60.position.set(4.95, 3.85, -3.8);
-    mesh60.rotation.y = -Math.PI / 2;
-    this.group.add(mesh60);
-    this.rightWallElements.push(mesh60);
-
-    // --- 3. "CELEBRATION" CONTINUA SULLE DUE PARETI ---
+    // --- 2. "CELEBRATION" CONTINUA SULLE DUE PARETI ---
     const createCelebrationHalf = (text: string, alignment: CanvasTextAlign) => {
       const canvas = document.createElement('canvas');
       canvas.width = 1024;

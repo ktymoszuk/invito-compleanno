@@ -20,13 +20,15 @@ export class RoomEngine {
   private reqId: number = 0;
   private music: HTMLAudioElement;
   private scratchResetTimer: number | null = null;
+  private volumeFadeId: number | null = null;
+  private musicStateListener: ((playing: boolean) => void) | null = null;
   private running = true;
 
   constructor(container: HTMLElement) {
     this.clock = new THREE.Clock();
-    this.music = new Audio('/music/ryan-paris-dolce-vita.mp3');
+    this.music = new Audio('/music/bacio-che-schiocca.mp3');
     this.music.loop = true;
-    this.music.volume = 0.72;
+    this.music.volume = 0.5;
     
     // Core setup
     this.sizes = new Sizes(container);
@@ -37,13 +39,13 @@ export class RoomEngine {
     // Elements
     this.room = new Room();
     this.camera.setNavigationRoot(this.room.group);
-    this.camera.addInteraction(this.room.robotDJ.headHitArea, () => this.cycleRoomPalette());
+    this.camera.addInteraction(this.room.robotDJ.group, () => this.room.robotDJ.performDance());
     this.room.djConsole.turntables.forEach(turntable => {
       this.camera.addInteraction(turntable, () => this.scratch());
     });
     this.camera.addInteraction(this.room.bar.bartender.servedDrink, () => this.room.bar.bartender.activateDrink());
     this.camera.addInteraction(this.room.payphone.group, () => this.room.payphone.ring());
-    this.camera.addInteraction(this.room.djConsole.group, () => this.toggleMusic());
+    this.camera.addInteraction(this.room.djConsole.group, () => this.room.robotDJ.performDance());
     this.camera.addInteraction(this.room.bar.group, () => this.room.bar.throwShaker());
     this.camera.addInteraction(this.room.birthdayCake.group, () => this.room.celebrateCake());
     this.discoBall = new DiscoBall();
@@ -70,7 +72,27 @@ export class RoomEngine {
     }
   }
 
-  private toggleMusic() {
+  async startMusicWithFade() {
+    if (this.volumeFadeId !== null) cancelAnimationFrame(this.volumeFadeId);
+    this.music.volume = 0;
+
+    try {
+      await this.music.play();
+      this.setMusicVisuals(true);
+      const startedAt = performance.now();
+      const fade = (now: number) => {
+        const progress = Math.min((now - startedAt) / 2000, 1);
+        this.music.volume = progress * 0.5;
+        if (progress < 1) this.volumeFadeId = requestAnimationFrame(fade);
+        else this.volumeFadeId = null;
+      };
+      this.volumeFadeId = requestAnimationFrame(fade);
+    } catch {
+      this.setMusicVisuals(false);
+    }
+  }
+
+  toggleMusic() {
     if (this.music.paused) {
       void this.music.play()
         .then(() => this.setMusicVisuals(true))
@@ -82,14 +104,22 @@ export class RoomEngine {
     this.setMusicVisuals(false);
   }
 
+  setMusicVolume(volume: number) {
+    if (this.volumeFadeId !== null) {
+      cancelAnimationFrame(this.volumeFadeId);
+      this.volumeFadeId = null;
+    }
+    this.music.volume = Math.min(Math.max(volume, 0), 1);
+  }
+
+  onMusicStateChange(listener: (playing: boolean) => void) {
+    this.musicStateListener = listener;
+  }
+
   private setMusicVisuals(playing: boolean) {
     this.room.djConsole.setPlaying(playing);
     this.room.robotDJ.setPlaying(playing);
-  }
-
-  private cycleRoomPalette() {
-    this.room.robotDJ.cycleLedPalette();
-    this.lighting.cyclePalette();
+    this.musicStateListener?.(playing);
   }
 
   private scratch() {
@@ -148,6 +178,7 @@ export class RoomEngine {
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     this.music.pause();
     this.music.src = '';
+    if (this.volumeFadeId !== null) cancelAnimationFrame(this.volumeFadeId);
     if (this.scratchResetTimer !== null) window.clearTimeout(this.scratchResetTimer);
     this.renderer.instance.dispose();
   }

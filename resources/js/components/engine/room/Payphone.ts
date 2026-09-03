@@ -138,25 +138,5 @@ export class Payphone {
 
   ring() {
     this.ringTime = 3.4;
-    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
-
-    const context = new AudioContextClass();
-    const gain = context.createGain();
-    gain.gain.setValueAtTime(0.0001, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.13, context.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 1.25);
-    gain.connect(context.destination);
-
-    [620, 760].forEach((frequency, index) => {
-      const oscillator = context.createOscillator();
-      oscillator.type = 'square';
-      oscillator.frequency.value = frequency;
-      oscillator.connect(gain);
-      oscillator.start(context.currentTime + index * 0.12);
-      oscillator.stop(context.currentTime + 1.3);
-    });
-
-    window.setTimeout(() => void context.close(), 1450);
   }
 }

@@ -5,7 +5,7 @@
     <Transition name="welcome">
       <section v-if="showWelcome" class="welcome-screen" aria-labelledby="welcome-title">
         <div class="welcome-content">
-          <p class="welcome-eyebrow">66 CELEBRATION</p>
+          <p class="welcome-eyebrow">'66 CELEBRATION</p>
           <h1 id="welcome-title">UN INVITO<br />PER TE</h1>
 
           <div class="explore-globe" aria-hidden="true">
@@ -88,7 +88,7 @@
 
         <div class="drawer-body">
           <div v-if="activeSection === 'info'">
-            <p class="eyebrow" style="font-size: 1.2rem; margin: 0;">66 CELEBRATION</p>
+            <p class="eyebrow" style="font-size: 1.2rem; margin: 0;">'66 CELEBRATION</p>
             <h2 class="panel-title">INGRESSO LIBERO</h2>
             <p class="subtitle" style="font-size: 1.2rem; margin-top: 0;">Massimo 300 ingressi</p>
 

@@ -9,9 +9,14 @@ export class DJSign {
     this.group = new THREE.Group();
 
     // --- 1. "66" CONTINUO SULLE DUE PARETI ---
-    const createNumberHalf = (alignment: CanvasTextAlign) => {
+    const createNumberHalf = (
+      alignment: CanvasTextAlign,
+      text = '6',
+      canvasWidth = 512,
+      planeWidth = 1.6,
+    ) => {
       const canvas = document.createElement('canvas');
-      canvas.width = 512;
+      canvas.width = canvasWidth;
       canvas.height = 768;
       const context = canvas.getContext('2d')!;
 
@@ -25,18 +30,18 @@ export class DJSign {
       context.strokeStyle = '#ff007f';
 
       const x = alignment === 'right' ? canvas.width - 12 : 12;
-      context.strokeText('6', x, canvas.height / 2);
+      context.strokeText(text, x, canvas.height / 2);
 
       context.shadowBlur = 15;
       context.shadowColor = '#ffffff';
       context.fillStyle = '#ffe6f2';
-      context.fillText('6', x, canvas.height / 2);
+      context.fillText(text, x, canvas.height / 2);
 
       const texture = new THREE.CanvasTexture(canvas);
       texture.minFilter = THREE.LinearFilter;
 
       return new THREE.Mesh(
-        new THREE.PlaneGeometry(1.6, 2.4),
+        new THREE.PlaneGeometry(planeWidth, 2.4),
         new THREE.MeshBasicMaterial({
           map: texture,
           transparent: true,
@@ -46,8 +51,8 @@ export class DJSign {
       );
     };
 
-    const firstSix = createNumberHalf('right');
-    firstSix.position.set(4.15, 4.05, -4.94);
+    const firstSix = createNumberHalf('right', "'6", 640, 2);
+    firstSix.position.set(3.95, 4.05, -4.94);
 
     const secondSix = createNumberHalf('left');
     secondSix.position.set(4.94, 4.05, -4.15);

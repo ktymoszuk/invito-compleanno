@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Aruba usa questa directory per la validazione dei certificati SSL.
+    RewriteRule ^\.well-known(?:/|$) - [L]
+
+    # Impedisce l'accesso diretto alle directory interne del progetto.
+    RewriteRule ^invito-compleanno/(?!public(?:/|$)) - [F,L,NC]
+
+    # Evita un nuovo inoltro dopo la riscrittura interna verso public/.
+    RewriteCond %{REQUEST_URI} !^/invito-compleanno/public(?:/|$) [NC]
+    RewriteRule ^(.*)$ invito-compleanno/public/$1 [L]
+</IfModule>
+
+Options -Indexes

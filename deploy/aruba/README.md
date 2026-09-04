@@ -1,4 +1,51 @@
-# Pubblicazione su Aruba Windows senza SSH
+# Pubblicazione su Aruba
+
+## Hosting Linux con progetto in `home/invito-compleanno`
+
+Se il percorso Aruba e `/web/htdocs/www.marcorossi.biz/home`, il server usa normalmente Apache. Puoi lasciare il repository completo nella sottocartella `invito-compleanno` e inoltrare il dominio alla sua cartella `public`.
+
+La struttura sul server deve essere:
+
+```text
+/web/htdocs/www.marcorossi.biz/home/
+	.htaccess
+	invito-compleanno/
+		.env
+		artisan
+		app/
+		public/
+			.htaccess
+			index.php
+			build/
+			images/
+			music/
+		storage/
+		vendor/
+```
+
+Carica `deploy/aruba/home-root.htaccess` come `/web/htdocs/www.marcorossi.biz/home/.htaccess`. Non rinominarlo dentro il repository: sul server il nome deve essere esattamente `.htaccess`.
+
+Lascia anche `public/.htaccess` al suo posto. Il primo file inoltra le richieste a `public`; il secondo gestisce le rotte Laravel, per esempio `/invitati` e `/area-riservata/login`.
+
+Prima dell'upload esegui `npm run build` e assicurati che sul server esistano `vendor`, `.env` e i permessi di scrittura per `storage` e `bootstrap/cache`. Imposta nel `.env`:
+
+```dotenv
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://www.marcorossi.biz
+```
+
+Prova infine questi URL:
+
+```text
+https://www.marcorossi.biz/
+https://www.marcorossi.biz/build/manifest.json
+https://www.marcorossi.biz/invitati
+```
+
+`https://www.marcorossi.biz/invito-compleanno/.env` deve rispondere con `403` o `404`.
+
+## Hosting Windows senza SSH
 
 Questa procedura sostituisce il vecchio invito con il progetto Laravel/Vue. Il piano deve avere PHP 8.4, MySQL, PDO MySQL e IIS URL Rewrite. Non serve Docker.
 

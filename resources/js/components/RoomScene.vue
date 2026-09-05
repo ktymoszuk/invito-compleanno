@@ -33,14 +33,14 @@
     >
       <a
         class="album-link"
-        href="https://open.spotify.com/intl-it/track/2C1cH4RmDkUBuFGVZN8T10?si=ef9c2b271c124b8d"
+        href="https://www.youtube.com/watch?v=YaC3UY3Dnnk"
         target="_blank"
         rel="noopener noreferrer"
-        title="Apri Bacio che schiocca su Spotify"
-        aria-label="Apri Bacio che schiocca su Spotify"
+        title="Apri Bacio che schiocca su YouTube"
+        aria-label="Apri Bacio che schiocca su YouTube"
       >
         <img :src="'/images/bacio_che_schiocca.webp'" alt="Copertina di Bacio che schiocca" decoding="async" />
-        <img class="spotify-badge" :src="'/images/spotify.webp'" alt="" aria-hidden="true" decoding="async" />
+        <span class="youtube-badge" aria-hidden="true"></span>
       </a>
       <div class="track-info">
         <strong>Bacio che schiocca</strong>
@@ -102,44 +102,209 @@
                 <div><small>LUOGO</small><strong>TOTEM · Via Vecchia Ferriera, 135, Vicenza</strong></div>
               </div>
             </div>
+
+            <div class="party-theme-note">
+              <span class="material-symbols-rounded" aria-hidden="true">checkroom</span>
+              <div>
+                <small>DRESS CODE</small>
+                <strong>Festa a tema anni '80</strong>
+              </div>
+            </div>
+ 
             <button class="primary-button" @click="selectSection('register')">Conferma la presenza</button>
           </div>
 
           <div v-else-if="activeSection === 'register'" class="form-section">
-            <p class="eyebrow">REGISTRAZIONE</p>
-            <h2 class="panel-title">Lascia i tuoi dati</h2>
-            <p class="subtitle">la presenza sarà confermata dall'organizzatore.</p>
-
-            <div v-if="showSuccess" class="status-panel success-section">
-              <span class="material-symbols-rounded">check_circle</span>
+            <div v-if="showSuccess" class="approval-confirmation" role="status" aria-live="polite">
+              <span class="approval-check" aria-hidden="true">
+                <svg viewBox="0 0 52 52">
+                  <circle cx="26" cy="26" r="24"></circle>
+                  <path d="M15 27 23 35 38 18"></path>
+                </svg>
+              </span>
               <strong>Richiesta inviata</strong>
-              <p>Registrazione avvenuta con successo. Ci vediamo in pista, {{ registeredFirstName }}.</p>
+              <p>Grazie, {{ registeredFirstName }}. La richiesta dovrà essere approvata dagli organizzatori.</p>
             </div>
-            <p v-if="showSuccess" class="add-person-hint">Aggiungi un altra persona</p>
 
-            <form @submit.prevent="submitRsvp">
-              <label class="input-group">
-                <span>Nome</span>
-                <input v-model.trim="firstName" maxlength="50" autocomplete="given-name" required class="input-field" />
-              </label>
-              <label class="input-group">
-                <span>Cognome</span>
-                <input v-model.trim="lastName" maxlength="50" autocomplete="family-name" required class="input-field" />
-              </label>
-              <label class="input-group">
-                <span>Invitato da</span>
-                <input v-model.trim="invitedBy" maxlength="100" required class="input-field" />
-              </label>
-              <p v-if="formError" class="error-message">{{ formError }}</p>
-              <button class="primary-button" type="submit" :disabled="isSubmitting">
-                {{ isSubmitting ? 'Invio in corso...' : 'Invia richiesta' }}
+            <template v-else>
+              <p class="eyebrow">REGISTRAZIONE</p>
+              <h2 class="panel-title">Lascia i tuoi dati</h2>
+              <p class="subtitle">La presenza sarà confermata dall'organizzatore.</p>
+
+              <form @submit.prevent="submitRsvp">
+                <label class="input-group">
+                  <span>Nome</span>
+                  <input v-model.trim="firstName" maxlength="50" autocomplete="given-name" required class="input-field" />
+                </label>
+                <label class="input-group">
+                  <span>Cognome</span>
+                  <input v-model.trim="lastName" maxlength="50" autocomplete="family-name" required class="input-field" />
+                </label>
+                <label class="input-group">
+                  <span>Invitato da</span>
+                  <input v-model.trim="invitedBy" maxlength="100" required class="input-field" />
+                </label>
+                <p v-if="formError" class="error-message">{{ formError }}</p>
+                <button class="primary-button" type="submit" :disabled="isSubmitting">
+                  {{ isSubmitting ? 'Invio in corso...' : 'Invia richiesta' }}
+                </button>
+              </form>
+
+              <button class="guest-list-button" type="button" @click="selectSection('guests')">
+                <span class="material-symbols-rounded">groups</span>
+                Lista invitati
               </button>
-            </form>
+            </template>
+          </div>
 
-            <button class="guest-list-button" type="button" @click="selectSection('guests')">
-              <span class="material-symbols-rounded">groups</span>
-              Lista invitati
+          <div v-else-if="activeSection === 'party'" class="party-details-section">
+            <div class="party-details-heading">
+              <div>
+                <p class="eyebrow">UN GESTO CHE RESTA</p>
+                <h2 class="panel-title">Al posto dei regali</h2>
+              </div>
+              <a
+                class="party-youtube-link"
+                href="https://www.youtube.com/watch?v=YaC3UY3Dnnk"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Ascolta Bacio che schiocca su YouTube"
+                aria-label="Ascolta Bacio che schiocca su YouTube"
+              >
+                <span class="material-symbols-rounded">smart_display</span>
+              </a>
+            </div>
+            <p class="subtitle">se ti fa piacere, puoi contribuire con una donazione a favore di un'associazione. Scegli Marco o Leonardo per vedere tutti i dettagli.</p>
+
+            <div class="donation-actions">
+              <button type="button" class="donation-button donation-marco" @click="openDonation('marco')">
+                <span class="material-symbols-rounded">volunteer_activism</span>
+                Marco
+              </button>
+              <button type="button" class="donation-button donation-leonardo" @click="openDonation('leonardo')">
+                <span class="material-symbols-rounded">landscape</span>
+                Leonardo
+              </button>
+            </div>
+
+            <button type="button" class="primary-button add-guest-button" @click="selectSection('register')">
+              <span class="material-symbols-rounded">person_add</span>
+              Aggiungi un altro invitato
             </button>
+
+            <section v-if="isAdminAuthenticated || programVisible" class="program-section" aria-labelledby="program-title">
+              <div class="program-heading">
+                <div>
+                  <p class="eyebrow">LA SERATA</p>
+                  <h2 id="program-title" class="panel-title">Programma della serata</h2>
+                </div>
+                <button
+                  v-if="isAdminAuthenticated"
+                  type="button"
+                  class="icon-button program-edit-button"
+                  :title="isEditingProgram ? 'Chiudi modifica' : 'Modifica programma'"
+                  :aria-label="isEditingProgram ? 'Termina modifica programma' : 'Modifica programma'"
+                  :aria-pressed="isEditingProgram"
+                  @click="toggleProgramEditor"
+                >
+                  <span class="material-symbols-rounded">{{ isEditingProgram ? 'done' : 'edit' }}</span>
+                </button>
+              </div>
+
+              <div v-if="isEditingProgram" class="program-editor">
+                <label class="program-visibility">
+                  <input v-model="programVisible" type="checkbox" @change="saveProgramVisibility" />
+                  <span>Mostra il programma agli invitati</span>
+                </label>
+
+                <form class="program-new-item" @submit.prevent="addProgramItem">
+                  <input v-model="newProgramTime" class="input-field program-time-input" type="time" aria-label="Orario nuova voce" />
+                  <input v-model.trim="newProgramDescription" class="input-field" maxlength="255" placeholder="Cosa succederà" aria-label="Descrizione nuova voce" required />
+                  <button class="icon-button program-add-button" type="submit" title="Aggiungi voce" aria-label="Aggiungi voce" :disabled="isSavingProgram">
+                    <span class="material-symbols-rounded">add</span>
+                  </button>
+                </form>
+
+                <ul class="program-editor-list">
+                  <li v-for="item in programItems" :key="item.id">
+                    <div class="program-item-fields">
+                      <input v-model="item.orario" class="input-field program-time-input" type="time" :aria-label="`Orario: ${item.descrizione}`" />
+                      <input v-model.trim="item.descrizione" class="input-field" maxlength="255" :aria-label="`Descrizione voce ${item.id}`" />
+                    </div>
+                    <div class="program-item-actions">
+                      <button
+                        v-if="!item.orario"
+                        type="button"
+                        class="icon-button"
+                        title="Sposta su"
+                        aria-label="Sposta voce su"
+                        :disabled="isReorderingProgram || programItems[0]?.id === item.id"
+                        @click="moveUntimedProgramItem(item, -1)"
+                      >
+                        <span class="material-symbols-rounded">arrow_upward</span>
+                      </button>
+                      <button
+                        v-if="!item.orario"
+                        type="button"
+                        class="icon-button"
+                        title="Sposta giù"
+                        aria-label="Sposta voce giù"
+                        :disabled="isReorderingProgram || programItems[programItems.length - 1]?.id === item.id"
+                        @click="moveUntimedProgramItem(item, 1)"
+                      >
+                        <span class="material-symbols-rounded">arrow_downward</span>
+                      </button>
+                      <button
+                        v-if="item.orario"
+                        type="button"
+                        class="icon-button program-clear-time"
+                        title="Togli orario"
+                        :aria-label="`Togli orario da ${item.descrizione}`"
+                        @click="clearProgramTime(item)"
+                      >
+                        <span class="material-symbols-rounded">schedule</span>
+                      </button>
+                      <button type="button" class="icon-button" title="Salva" aria-label="Salva voce" @click="saveProgramItem(item)">
+                        <span class="material-symbols-rounded">save</span>
+                      </button>
+                      <button type="button" class="icon-button program-delete-button" title="Elimina" aria-label="Elimina voce" @click="deleteProgramItem(item)">
+                        <span class="material-symbols-rounded">delete</span>
+                      </button>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              <div v-else-if="isLoadingProgram" class="empty-state">Caricamento programma...</div>
+              <ol v-else-if="programItems.length" class="program-list">
+                <li v-for="item in programItems" :key="item.id">
+                  <time v-if="item.orario">{{ item.orario }}</time>
+                  <span v-else class="program-marker" aria-hidden="true"></span>
+                  <strong>{{ item.descrizione }}</strong>
+                </li>
+              </ol>
+              <p v-else-if="isAdminAuthenticated" class="empty-state">Aggiungi la prima voce al programma.</p>
+            </section>
+          </div>
+
+          <div v-else-if="activeSection === 'donation' && activeDonation" class="donation-detail">
+            <button type="button" class="icon-button donation-back-button" title="Torna alle informazioni" aria-label="Torna alle informazioni della festa" @click="selectSection('party')">
+              <span class="material-symbols-rounded">arrow_back</span>
+            </button>
+            <p class="eyebrow">DONAZIONE DI {{ activeDonation.name.toUpperCase() }}</p>
+            <button type="button" class="primary-button copy-iban-button" @click="copyDonationIban">
+              <span class="material-symbols-rounded">content_copy</span>
+              {{ copiedIban ? 'IBAN copiato' : 'Copia IBAN' }}
+            </button>
+            <a
+              class="donation-image-link"
+              :href="activeDonation.image"
+              target="_blank"
+              rel="noopener noreferrer"
+              :aria-label="`Apri a tutto schermo i dettagli per la donazione di ${activeDonation.name}`"
+            >
+              <img :src="activeDonation.image" :alt="`Dettagli per la donazione di ${activeDonation.name}`" loading="eager" fetchpriority="high" decoding="async" />
+            </a>
           </div>
 
           <div v-else-if="activeSection === 'guests'">
@@ -237,7 +402,7 @@
             </ul>
           </div>
 
-          <div v-else class="reserved-section">
+          <div v-else-if="activeSection === 'reserved'" class="reserved-section">
             <span class="material-symbols-rounded lock-icon">admin_panel_settings</span>
             <p class="eyebrow">AREA RISERVATA</p>
             
@@ -282,7 +447,8 @@ import axios from 'axios';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { RoomEngine } from './engine/RoomEngine';
 
-type Section = 'info' | 'register' | 'guests' | 'reserved';
+type Section = 'info' | 'register' | 'party' | 'donation' | 'guests' | 'reserved';
+type DonationKey = 'marco' | 'leonardo';
 type AuthResponse = { authenticated: boolean; csrf_token: string };
 type Guest = {
   id: number;
@@ -291,6 +457,13 @@ type Guest = {
   invitato_da?: string;
   approved?: 0 | 1 | 2;
 };
+type ProgramItem = {
+  id: number;
+  orario: string | null;
+  descrizione: string;
+  posizione: number;
+};
+type ProgramResponse = { visibile: boolean; voci: ProgramItem[] };
 
 const canvasContainer = ref<HTMLDivElement | null>(null);
 let engine: RoomEngine | null = null;
@@ -304,6 +477,8 @@ const isOpen = ref(false);
 const activeSection = ref<Section>('info');
 const showSuccess = ref(false);
 const registeredFirstName = ref('');
+const selectedDonation = ref<DonationKey | null>(null);
+const copiedIban = ref(false);
 const firstName = ref('');
 const lastName = ref('');
 const invitedBy = ref('');
@@ -320,12 +495,38 @@ const updatingGuestId = ref<number | null>(null);
 const updatingGuestStatus = ref<1 | 2 | null>(null);
 const guestSearch = ref('');
 const statusFilter = ref<'all' | '0' | '1' | '2'>('all');
+const programVisible = ref(false);
+const programItems = ref<ProgramItem[]>([]);
+const isLoadingProgram = ref(false);
+const isEditingProgram = ref(false);
+const isSavingProgram = ref(false);
+const isReorderingProgram = ref(false);
+const newProgramTime = ref('');
+const newProgramDescription = ref('');
 let musicPlayerInactivityTimer: number | null = null;
+let registrationTransitionTimer: number | null = null;
+let copiedIbanTimer: number | null = null;
 const guestCapacity = 300;
+
+const donations = {
+  marco: {
+    name: 'Marco',
+    image: '/images/marco.webp',
+    iban: 'IT95J0306909606100000018291',
+  },
+  leonardo: {
+    name: 'Leonardo',
+    image: '/images/leonardo.webp',
+    iban: 'IT19J0801134320000011042626',
+  },
+} as const;
+
+const activeDonation = computed(() => selectedDonation.value ? donations[selectedDonation.value] : null);
 
 const navigationItems: Array<{ id: Section; icon: string; label: string }> = [
   { id: 'info', icon: 'info', label: 'Info' },
   { id: 'register', icon: 'person_add', label: 'Registrati' },
+  { id: 'party', icon: 'celebration', label: 'Festa e donazioni' },
   { id: 'guests', icon: 'groups', label: 'Lista invitati' },
   { id: 'reserved', icon: 'lock', label: 'Area riservata' },
 ];
@@ -384,7 +585,7 @@ const scheduleMusicPlayerMinimize = () => {
   musicPlayerInactivityTimer = window.setTimeout(() => {
     isMusicPlayerMinimized.value = true;
     musicPlayerInactivityTimer = null;
-  }, 5000);
+  }, 10000);
 };
 
 const wakeMusicPlayer = () => {
@@ -396,7 +597,6 @@ const enterParty = () => {
   showWelcome.value = false;
   hasEntered.value = true;
   scheduleMusicPlayerMinimize();
-  void engine?.startMusicWithFade();
 };
 
 const toggleMusic = () => {
@@ -412,7 +612,29 @@ const closeDrawer = () => {
   setTimeout(() => {
     activeSection.value = 'info';
     showSuccess.value = false;
+    selectedDonation.value = null;
+    isEditingProgram.value = false;
   }, 300);
+};
+
+const loadProgram = async () => {
+  isLoadingProgram.value = true;
+  try {
+    const endpoint = isAdminAuthenticated.value
+      ? '/area-riservata/programma-serata'
+      : '/programma-serata';
+    const response = await axios.get<ProgramResponse>(endpoint);
+    programVisible.value = response.data.visibile;
+    programItems.value = response.data.voci;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      isAdminAuthenticated.value = false;
+      isEditingProgram.value = false;
+      await loadProgram();
+    }
+  } finally {
+    isLoadingProgram.value = false;
+  }
 };
 
 const loadGuests = async () => {
@@ -451,6 +673,10 @@ const selectSection = async (section: Section) => {
 
   activeSection.value = section;
   if (section === 'guests') await loadGuests();
+  if (section === 'party') {
+    selectedDonation.value = null;
+    await loadProgram();
+  }
 };
 
 const csrfHeaders = () => {
@@ -479,10 +705,116 @@ const submitRsvp = async () => {
     firstName.value = '';
     lastName.value = '';
     invitedBy.value = '';
+    if (registrationTransitionTimer !== null) window.clearTimeout(registrationTransitionTimer);
+    registrationTransitionTimer = window.setTimeout(() => {
+      showSuccess.value = false;
+      registrationTransitionTimer = null;
+      void selectSection('party');
+    }, 2200);
   } catch {
     formError.value = 'Non è stato possibile inviare la richiesta. Riprova.';
   } finally {
     isSubmitting.value = false;
+  }
+};
+
+const openDonation = (donation: DonationKey) => {
+  selectedDonation.value = donation;
+  copiedIban.value = false;
+  activeSection.value = 'donation';
+};
+
+const copyDonationIban = async () => {
+  if (!activeDonation.value) return;
+
+  try {
+    await navigator.clipboard.writeText(activeDonation.value.iban);
+  } catch {
+    const input = document.createElement('textarea');
+    input.value = activeDonation.value.iban;
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    input.remove();
+  }
+
+  copiedIban.value = true;
+  if (copiedIbanTimer !== null) window.clearTimeout(copiedIbanTimer);
+  copiedIbanTimer = window.setTimeout(() => {
+    copiedIban.value = false;
+    copiedIbanTimer = null;
+  }, 2000);
+};
+
+const toggleProgramEditor = async () => {
+  isEditingProgram.value = !isEditingProgram.value;
+  if (isEditingProgram.value) await loadProgram();
+};
+
+const saveProgramVisibility = async () => {
+  await axios.patch('/area-riservata/programma-serata/visibilita', {
+    visibile: programVisible.value,
+  }, { headers: csrfHeaders() });
+};
+
+const addProgramItem = async () => {
+  if (!newProgramDescription.value) return;
+  isSavingProgram.value = true;
+  try {
+    await axios.post('/area-riservata/programma-serata', {
+      orario: newProgramTime.value || null,
+      descrizione: newProgramDescription.value,
+    }, { headers: csrfHeaders() });
+    newProgramTime.value = '';
+    newProgramDescription.value = '';
+    await loadProgram();
+  } finally {
+    isSavingProgram.value = false;
+  }
+};
+
+const saveProgramItem = async (item: ProgramItem) => {
+  await axios.patch(`/area-riservata/programma-serata/${item.id}`, {
+    orario: item.orario || null,
+    descrizione: item.descrizione,
+  }, { headers: csrfHeaders() });
+  await loadProgram();
+};
+
+const clearProgramTime = async (item: ProgramItem) => {
+  item.orario = null;
+  await saveProgramItem(item);
+};
+
+const deleteProgramItem = async (item: ProgramItem) => {
+  await axios.delete(`/area-riservata/programma-serata/${item.id}`, { headers: csrfHeaders() });
+  await loadProgram();
+};
+
+const moveUntimedProgramItem = async (item: ProgramItem, direction: -1 | 1) => {
+  if (item.orario || isReorderingProgram.value) return;
+
+  const previousItems = [...programItems.value];
+  const currentIndex = previousItems.findIndex(programItem => programItem.id === item.id);
+  const destinationIndex = currentIndex + direction;
+  if (currentIndex < 0 || destinationIndex < 0 || destinationIndex >= previousItems.length) return;
+
+  const orderedItems = [...previousItems];
+  [orderedItems[currentIndex], orderedItems[destinationIndex]] = [orderedItems[destinationIndex], orderedItems[currentIndex]];
+  programItems.value = orderedItems;
+  isReorderingProgram.value = true;
+
+  try {
+    const response = await axios.patch<{ voci: ProgramItem[] }>('/area-riservata/programma-serata/ordine', {
+      voci: orderedItems.map(programItem => programItem.id),
+    }, { headers: csrfHeaders() });
+    programItems.value = response.data.voci;
+  } catch {
+    programItems.value = previousItems;
+  } finally {
+    isReorderingProgram.value = false;
   }
 };
 
@@ -548,6 +880,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (musicPlayerInactivityTimer !== null) window.clearTimeout(musicPlayerInactivityTimer);
+  if (registrationTransitionTimer !== null) window.clearTimeout(registrationTransitionTimer);
+  if (copiedIbanTimer !== null) window.clearTimeout(copiedIbanTimer);
   engine?.destroy();
 });
 </script>
@@ -780,31 +1114,41 @@ onUnmounted(() => {
 
 .album-link::after {
   position: absolute;
-  bottom: -3px;
-  left: -3px;
+  bottom: -4px;
+  left: -4px;
   z-index: 1;
-  width: 22px;
-  height: 22px;
-  background: #ffffff;
+  width: 26px;
+  height: 26px;
+  background: #ff0033;
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
   content: '';
   transition: opacity 0.2s ease, transform 0.4s ease, visibility 0.2s;
 }
 
-.spotify-badge {
+.youtube-badge {
   position: absolute;
-  bottom: -2px;
-  left: -2px;
+  bottom: -4px;
+  left: -4px;
   z-index: 2;
-  display: block;
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
   transition: opacity 0.2s ease, transform 0.4s ease, visibility 0.2s;
 }
 
-.music-player.minimized .spotify-badge,
+.youtube-badge::before {
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 10px solid #ffffff;
+  content: '';
+}
+
+.music-player.minimized .youtube-badge,
 .music-player.minimized .album-link::after {
   visibility: hidden;
   opacity: 0;
@@ -1373,6 +1717,345 @@ onUnmounted(() => {
   text-align: center;
 }
 
+.approval-confirmation {
+  display: grid;
+  justify-items: center;
+  min-height: 300px;
+  align-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.approval-confirmation strong {
+  margin-top: 18px;
+  color: #ffffff;
+  font-size: 22px;
+}
+
+.approval-confirmation p {
+  max-width: 390px;
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.approval-check {
+  width: 92px;
+  height: 92px;
+}
+
+.approval-check svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #67f7e8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px rgba(103, 247, 232, 0.45));
+}
+
+.approval-check circle {
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: approval-circle 0.65s ease-out forwards;
+}
+
+.approval-check path {
+  stroke-dasharray: 35;
+  stroke-dashoffset: 35;
+  animation: approval-check 0.42s 0.55s ease-out forwards;
+}
+
+@keyframes approval-circle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes approval-check {
+  to { stroke-dashoffset: 0; }
+}
+
+.donation-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.party-details-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-right: 52px;
+}
+
+.party-youtube-link {
+  display: grid;
+  flex: 0 0 48px;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  background: #ff0033;
+  border: 1px solid #ff0033;
+  border-radius: 50%;
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(255, 0, 51, 0.3);
+  text-decoration: none;
+}
+
+.party-youtube-link .material-symbols-rounded {
+  font-size: 27px;
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+
+.party-theme-note {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 13px 14px;
+  background: rgba(255, 216, 77, 0.1);
+  border: 1px solid rgba(255, 216, 77, 0.42);
+  border-radius: 6px;
+}
+
+.party-theme-note > .material-symbols-rounded {
+  color: #ffd84d;
+  font-size: 28px;
+}
+
+.party-theme-note small,
+.party-theme-note strong {
+  display: block;
+}
+
+.party-theme-note small {
+  margin-bottom: 3px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.party-theme-note strong {
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.donation-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 54px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  cursor: pointer;
+  font: 800 15px 'Courier New', monospace;
+}
+
+.donation-marco {
+  background: rgba(0, 217, 255, 0.14);
+  color: #67f7e8;
+}
+
+.donation-leonardo {
+  background: rgba(255, 216, 77, 0.14);
+  color: #ffd84d;
+}
+
+.add-guest-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.program-section {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.program-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.program-edit-button,
+.donation-back-button {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  background: rgba(103, 247, 232, 0.12);
+  border: 1px solid rgba(103, 247, 232, 0.5);
+  border-radius: 50%;
+  color: #67f7e8;
+}
+
+.program-list,
+.program-editor-list {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.program-list li {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.program-list time {
+  color: #ffd84d;
+  font-weight: 900;
+}
+
+.program-list strong {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.program-marker {
+  width: 8px;
+  height: 8px;
+  margin-left: 18px;
+  background: #67f7e8;
+  border-radius: 50%;
+  box-shadow: 0 0 9px rgba(103, 247, 232, 0.7);
+}
+
+.program-editor {
+  margin-top: 18px;
+}
+
+.program-visibility {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+}
+
+.program-visibility input {
+  width: 20px;
+  height: 20px;
+  accent-color: #67f7e8;
+}
+
+.program-new-item {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr) 48px;
+  gap: 8px;
+}
+
+.program-time-input {
+  min-width: 0;
+  padding-inline: 9px;
+}
+
+.program-clear-time {
+  color: #ffd84d;
+}
+
+.program-clear-time .material-symbols-rounded {
+  font-size: 21px;
+}
+
+.program-add-button {
+  min-height: 54px;
+  background: #67f7e8;
+  border-radius: 6px;
+  color: #071210;
+}
+
+.program-editor-list li {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+}
+
+.program-item-fields {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.program-item-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.program-item-actions .icon-button {
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+}
+
+.program-item-actions .icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.program-delete-button {
+  color: #ff8aa8;
+}
+
+.donation-detail {
+  position: relative;
+  padding-top: 48px;
+}
+
+.donation-detail .eyebrow {
+  margin-bottom: 12px;
+}
+
+.donation-image-link {
+  display: block;
+  width: min(100%, 480px);
+  margin: 18px auto;
+}
+
+.donation-detail img {
+  display: block;
+  width: 100%;
+  height: auto;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+}
+
+.donation-back-button {
+  position: absolute;
+  top: -8px;
+  left: 0;
+}
+
+.copy-iban-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
 .guest-list {
   display: grid;
   gap: 8px;
@@ -1646,7 +2329,7 @@ onUnmounted(() => {
 
 .bottom-nav {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 4px;
   padding: 10px max(18px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom));
   background: rgba(5, 7, 12, 0.58);
@@ -1723,6 +2406,11 @@ onUnmounted(() => {
   .drawer-body {
     min-height: 0;
     padding: 30px 20px 20px;
+  }
+
+  .donation-image-link {
+    width: calc(100% + 24px);
+    margin: 16px -12px;
   }
 
   .panel-title {

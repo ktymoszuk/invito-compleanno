@@ -25,8 +25,8 @@ export class BartenderRobot {
     const shell = new THREE.MeshStandardMaterial({ color: 0xdce6e9, metalness: 0.82, roughness: 0.22 });
     const dark = new THREE.MeshStandardMaterial({ color: 0x10151c, metalness: 0.72, roughness: 0.28 });
     const pink = new THREE.MeshStandardMaterial({
-      color: 0xff4f9a,
-      emissive: 0xff4f9a,
+      color: 0xff287f,
+      emissive: 0xff287f,
       emissiveIntensity: 1.5,
     });
 
@@ -70,8 +70,8 @@ export class BartenderRobot {
     this.group.add(this.shaker);
 
     this.drinkMaterial = new THREE.MeshStandardMaterial({
-      color: 0xff4f9a,
-      emissive: 0xff4f9a,
+      color: 0xff287f,
+      emissive: 0xff287f,
       emissiveIntensity: 0.9,
       transparent: true,
       opacity: 0,
@@ -119,7 +119,7 @@ export class BartenderRobot {
 
     this.pourStream = new THREE.Mesh(
       new THREE.CylinderGeometry(0.018, 0.018, 0.5, 8),
-      new THREE.MeshBasicMaterial({ color: 0xff4f9a, transparent: true, opacity: 0.75 }),
+      new THREE.MeshBasicMaterial({ color: 0xff287f, transparent: true, opacity: 0.75 }),
     );
     this.pourStream.position.set(-0.34, 1.58, 0.5);
     this.pourStream.visible = false;
@@ -222,7 +222,7 @@ export class BartenderRobot {
 
   activateDrink() {
     if (!this.glass.visible || this.drinkMaterial.opacity === 0) return;
-    const colors = [0xff4f9a, 0x67f7e8, 0xffd84d, 0x8f6bff, 0x65ff75];
+    const colors = [0xff287f, 0x00d9ff, 0xffd84d, 0xff6b24, 0x65ff75];
     this.drinkColorIndex = (this.drinkColorIndex + 1) % colors.length;
     const color = colors[this.drinkColorIndex];
     this.drinkMaterial.color.setHex(color);

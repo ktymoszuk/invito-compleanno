@@ -106,11 +106,20 @@ export class Room {
     this.group.add(this.cakeConfettiRain.group);
   }
 
+  updateWallVisibility(cameraPosition: THREE.Vector3) {
+    this.vinylWall.update(cameraPosition);
+    this.payphone.updateVisibility(cameraPosition);
+    this.countdownBoard.updateVisibility(cameraPosition);
+    this.djSign.updateVisibility(cameraPosition);
+    this.birthdayCake.updateVisibility(cameraPosition);
+    this.tallPlant.updateVisibility(cameraPosition);
+  }
+
   update(delta: number) {
     if (this.floor) {
       this.floor.update(delta);
     }
-    if (this.countdownBoard) {
+    if (this.countdownBoard?.group.visible) {
       this.countdownBoard.update();
     }
     if (this.robotDJ) {
@@ -125,10 +134,13 @@ export class Room {
     if (this.bar) {
       this.bar.update(delta);
     }
-    if (this.birthdayCake) {
+    if (this.loungeSet) {
+      this.loungeSet.update(delta);
+    }
+    if (this.birthdayCake?.group.visible) {
       this.birthdayCake.update(delta);
     }
-    if (this.payphone) {
+    if (this.payphone?.group.visible) {
       this.payphone.update(delta);
     }
     if (this.confettiRain) {

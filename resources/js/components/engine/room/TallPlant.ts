@@ -62,4 +62,8 @@ export class TallPlant {
     plantLight.position.set(0, 1.5, 0.4);
     this.group.add(plantLight);
   }
+
+  updateVisibility(cameraPosition: THREE.Vector3) {
+    this.group.visible = cameraPosition.x < 4.95;
+  }
 }

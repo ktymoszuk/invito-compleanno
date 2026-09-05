@@ -66,24 +66,6 @@ export class BirthdayCake {
     ribbon.position.y = 1.16;
     this.group.add(lowerCake, upperCake, ribbon);
 
-    const numberCanvas = document.createElement('canvas');
-    numberCanvas.width = 256;
-    numberCanvas.height = 160;
-    const numberContext = numberCanvas.getContext('2d')!;
-    numberContext.textAlign = 'center';
-    numberContext.textBaseline = 'middle';
-    numberContext.font = '900 132px "Trebuchet MS", sans-serif';
-    numberContext.shadowColor = '#67f7e8';
-    numberContext.shadowBlur = 20;
-    numberContext.fillStyle = '#ffffff';
-    numberContext.fillText('60', 128, 84);
-    const numberTexture = new THREE.CanvasTexture(numberCanvas);
-    numberTexture.colorSpace = THREE.SRGBColorSpace;
-    const number = new THREE.Sprite(new THREE.SpriteMaterial({ map: numberTexture, transparent: true, depthWrite: false }));
-    number.position.set(0, 2.08, 0);
-    number.scale.set(0.72, 0.45, 1);
-    this.group.add(number);
-
     [-0.2, 0, 0.2].forEach((xPosition, index) => {
       const candle = new THREE.Mesh(
         new THREE.CylinderGeometry(0.025, 0.025, 0.28, 12),
@@ -155,6 +137,10 @@ export class BirthdayCake {
       );
     });
     return true;
+  }
+
+  updateVisibility(cameraPosition: THREE.Vector3) {
+    this.group.visible = cameraPosition.x < 4.95;
   }
 
   update(delta: number) {

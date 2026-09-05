@@ -2,6 +2,8 @@ import * as THREE from 'three';
 
 export class LoungeSet {
   group: THREE.Group;
+  private lavaBlobs: THREE.Mesh[] = [];
+  private elapsed = 0;
 
   constructor() {
     this.group = new THREE.Group();
@@ -52,27 +54,59 @@ export class LoungeSet {
       this.group.add(chair);
     });
 
-    const drink = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.11, 0.08, 0.22, 16),
-      new THREE.MeshStandardMaterial({
-        color: 0x67f7e8,
-        emissive: 0x67f7e8,
-        emissiveIntensity: 0.8,
+    const lamp = new THREE.Group();
+    lamp.position.set(0, 0.98, 0);
+
+    const lampMetal = new THREE.MeshStandardMaterial({
+      color: 0xc98f2b,
+      metalness: 0.82,
+      roughness: 0.2,
+    });
+    const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 0.13, 20), lampMetal);
+    const lampGlass = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.15, 0.48, 20),
+      new THREE.MeshPhysicalMaterial({
+        color: 0xffc928,
+        emissive: 0x8f4800,
+        emissiveIntensity: 0.48,
         transparent: true,
-        opacity: 0.82,
+        opacity: 0.48,
+        transmission: 0.38,
+        roughness: 0.12,
+        depthWrite: false,
       }),
     );
-    drink.position.set(0.18, 1.055, 0.04);
-    const straw = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.012, 0.012, 0.34, 8),
-      new THREE.MeshBasicMaterial({ color: 0xffffff }),
-    );
-    straw.position.set(0.23, 1.25, 0.04);
-    straw.rotation.z = -0.18;
-    this.group.add(drink, straw);
+    lampGlass.position.y = 0.3;
+    const lampCap = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 0.1, 20), lampMetal);
+    lampCap.position.y = 0.59;
+    lamp.add(lampBase, lampGlass, lampCap);
+
+    const lavaMaterial = new THREE.MeshBasicMaterial({ color: 0xffef62 });
+    [0.18, 0.34, 0.48].forEach((height, index) => {
+      const blob = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 10), lavaMaterial);
+      blob.position.y = height;
+      blob.scale.set(1 + index * 0.12, 1.35, 0.82);
+      this.lavaBlobs.push(blob);
+      lamp.add(blob);
+    });
+
+    const lampGlow = new THREE.PointLight(0xffc928, 1.6, 1.8, 2);
+    lampGlow.position.y = 0.34;
+    lamp.add(lampGlow);
+    this.group.add(lamp);
 
     const loungeLight = new THREE.PointLight(0x67f7e8, 5, 4.2, 1.7);
     loungeLight.position.set(0, 1.8, 0.2);
     this.group.add(loungeLight);
+  }
+
+  update(delta: number) {
+    this.elapsed += delta;
+    this.lavaBlobs.forEach((blob, index) => {
+      const phase = this.elapsed * (0.72 + index * 0.09) + index * 2.1;
+      blob.position.y = 0.33 + Math.sin(phase) * 0.16;
+      blob.position.x = Math.sin(phase * 0.67) * 0.025;
+      blob.scale.y = 1.15 + Math.cos(phase * 1.3) * 0.28;
+    });
   }
 }

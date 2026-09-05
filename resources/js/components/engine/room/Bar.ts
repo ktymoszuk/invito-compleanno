@@ -40,8 +40,8 @@ export class Bar {
     const neonStrip = new THREE.Mesh(
       new THREE.BoxGeometry(2.85, 0.055, 0.025),
       new THREE.MeshStandardMaterial({
-        color: 0x67f7e8,
-        emissive: 0x67f7e8,
+        color: 0x00d9ff,
+        emissive: 0x00d9ff,
         emissiveIntensity: 2.1,
       }),
     );
@@ -54,7 +54,7 @@ export class Bar {
       this.group.add(shelf);
     });
 
-    const bottleColors = [0xff4f9a, 0x67f7e8, 0xffd84d, 0x8f6bff, 0x7dff89, 0xff7657];
+    const bottleColors = [0xff287f, 0x00d9ff, 0xffd84d, 0xff6b24, 0x65ff75, 0xff287f];
     bottleColors.forEach((color, index) => {
       const shelfLevel = index < 3 ? 1.55 : 2.15;
       const xPosition = -0.85 + (index % 3) * 0.85;
@@ -81,9 +81,9 @@ export class Bar {
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.font = '900 126px "Trebuchet MS", sans-serif';
-    context.shadowColor = '#ff4f9a';
+    context.shadowColor = '#ff287f';
     context.shadowBlur = 32;
-    context.strokeStyle = '#ff4f9a';
+    context.strokeStyle = '#ff287f';
     context.lineWidth = 7;
     context.strokeText('BAR', 256, 96);
     context.fillStyle = '#ffffff';
@@ -98,14 +98,14 @@ export class Bar {
     sign.position.set(0, 2.92, -0.37);
     this.group.add(sign);
 
-    const barLight = new THREE.PointLight(0xff4f9a, 8, 4.5, 1.5);
+    const barLight = new THREE.PointLight(0xff287f, 8, 4.5, 1.5);
     barLight.position.set(0, 2.2, 1.25);
     this.group.add(barLight);
 
     this.bartender = new BartenderRobot();
     this.group.add(this.bartender.group);
 
-    this.interactionPulse = new InteractivePulse(0xff4f9a);
+    this.interactionPulse = new InteractivePulse(0xff287f);
     this.interactionPulse.group.position.set(0, 0.5, 0.805);
     this.group.add(this.interactionPulse.group);
   }

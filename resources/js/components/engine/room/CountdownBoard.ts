@@ -13,10 +13,12 @@ export class CountdownBoard {
     this.targetDate = targetDate;
 
     // 1. CANVAS AD ALTA RISOLUZIONE
+    const resolutionScale = window.matchMedia('(max-width: 768px)').matches ? 0.5 : 1;
     this.canvas = document.createElement('canvas');
-    this.canvas.width = 2048;
-    this.canvas.height = 512;
+    this.canvas.width = 2048 * resolutionScale;
+    this.canvas.height = 512 * resolutionScale;
     this.ctx = this.canvas.getContext('2d')!;
+    this.ctx.scale(resolutionScale, resolutionScale);
 
     this.texture = new THREE.CanvasTexture(this.canvas);
     this.texture.minFilter = THREE.LinearFilter;
@@ -89,13 +91,13 @@ export class CountdownBoard {
     }
 
     // --- RENDERING CANVAS GRAFICA ---
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.clearRect(0, 0, 2048, 512);
 
     // Sfondo nero profondo
     this.ctx.fillStyle = '#000000';
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.fillRect(0, 0, 2048, 512);
 
-    const centerX = this.canvas.width / 2;
+    const centerX = 1024;
 
     // 1. TITOLO E DATA DELL'EVENTO
     this.ctx.font = '900 92px "Courier New", monospace';

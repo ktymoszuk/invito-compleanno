@@ -18,7 +18,8 @@ export class RoomEngine {
   
   private clock: THREE.Clock;
   private reqId: number = 0;
-  private music: HTMLAudioElement;
+  private music: HTMLAudioElement | null = null;
+  private musicVolume = 0.4;
   private scratchResetTimer: number | null = null;
   private volumeFadeId: number | null = null;
   private musicStateListener: ((playing: boolean) => void) | null = null;
@@ -26,10 +27,6 @@ export class RoomEngine {
 
   constructor(container: HTMLElement) {
     this.clock = new THREE.Clock();
-    this.music = new Audio('/music/bacio-che-schiocca.mp3');
-    this.music.loop = true;
-    this.music.volume = 0.5;
-    
     // Core setup
     this.sizes = new Sizes(container);
     this.scene = new Scene();
@@ -74,15 +71,16 @@ export class RoomEngine {
 
   async startMusicWithFade() {
     if (this.volumeFadeId !== null) cancelAnimationFrame(this.volumeFadeId);
-    this.music.volume = 0;
+    const music = this.getMusic();
+    music.volume = 0;
 
     try {
-      await this.music.play();
+      await music.play();
       this.setMusicVisuals(true);
       const startedAt = performance.now();
       const fade = (now: number) => {
         const progress = Math.min((now - startedAt) / 2000, 1);
-        this.music.volume = progress * 0.5;
+        music.volume = progress * this.musicVolume;
         if (progress < 1) this.volumeFadeId = requestAnimationFrame(fade);
         else this.volumeFadeId = null;
       };
@@ -93,14 +91,15 @@ export class RoomEngine {
   }
 
   toggleMusic() {
-    if (this.music.paused) {
-      void this.music.play()
+    const music = this.getMusic();
+    if (music.paused) {
+      void music.play()
         .then(() => this.setMusicVisuals(true))
         .catch(() => this.setMusicVisuals(false));
       return;
     }
 
-    this.music.pause();
+    music.pause();
     this.setMusicVisuals(false);
   }
 
@@ -109,7 +108,8 @@ export class RoomEngine {
       cancelAnimationFrame(this.volumeFadeId);
       this.volumeFadeId = null;
     }
-    this.music.volume = Math.min(Math.max(volume, 0), 1);
+    this.musicVolume = Math.min(Math.max(volume, 0), 1);
+    if (this.music) this.music.volume = this.musicVolume;
   }
 
   onMusicStateChange(listener: (playing: boolean) => void) {
@@ -122,13 +122,22 @@ export class RoomEngine {
     this.musicStateListener?.(playing);
   }
 
+  private getMusic() {
+    if (!this.music) {
+      this.music = new Audio('/music/bacio-che-schiocca.mp3');
+      this.music.loop = true;
+      this.music.volume = this.musicVolume;
+    }
+    return this.music;
+  }
+
   private scratch() {
     this.room.djConsole.scratch();
     this.room.movingLightRig.boost();
-    if (!this.music.paused) this.music.playbackRate = 1.35;
+    if (this.music && !this.music.paused) this.music.playbackRate = 1.35;
     if (this.scratchResetTimer !== null) window.clearTimeout(this.scratchResetTimer);
     this.scratchResetTimer = window.setTimeout(() => {
-      this.music.playbackRate = 1;
+      if (this.music) this.music.playbackRate = 1;
       this.scratchResetTimer = null;
     }, 1100);
   }
@@ -161,10 +170,7 @@ export class RoomEngine {
 
     // Aggiorna tutta la stanza (inclusi i coriandoli se sono stati attivati)
     this.room.update(delta);
-    this.room.vinylWall.update(this.camera.instance.position);
-    this.room.payphone.updateVisibility(this.camera.instance.position);
-    this.room.countdownBoard.updateVisibility(this.camera.instance.position);
-    this.room.djSign.updateVisibility(this.camera.instance.position);
+    this.room.updateWallVisibility(this.camera.instance.position);
 
     // Render
     this.renderer.render(this.scene.instance, this.camera.instance);
@@ -176,10 +182,13 @@ export class RoomEngine {
     this.running = false;
     cancelAnimationFrame(this.reqId);
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
-    this.music.pause();
-    this.music.src = '';
+    this.camera.destroy();
+    this.sizes.destroy();
+    this.music?.pause();
+    if (this.music) this.music.src = '';
     if (this.volumeFadeId !== null) cancelAnimationFrame(this.volumeFadeId);
     if (this.scratchResetTimer !== null) window.clearTimeout(this.scratchResetTimer);
     this.renderer.instance.dispose();
+    this.renderer.instance.domElement.remove();
   }
 }

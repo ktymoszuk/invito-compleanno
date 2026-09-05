@@ -6,18 +6,22 @@ export class Sizes extends EventTarget {
   constructor(private container: HTMLElement) {
     super();
     this.update();
-
-    window.addEventListener('resize', () => {
-      this.update();
-      // Emette l'evento nativo 'resize'
-      this.dispatchEvent(new Event('resize'));
-    });
+    window.addEventListener('resize', this.handleResize, { passive: true });
   }
+
+  private handleResize = () => {
+    this.update();
+    this.dispatchEvent(new Event('resize'));
+  };
 
   private update() {
     this.width = this.container.clientWidth;
     this.height = this.container.clientHeight;
-    const maxPixelRatio = this.width <= 768 ? 1.35 : 1.5;
+    const maxPixelRatio = this.width <= 768 ? 1 : 1.5;
     this.pixelRatio = Math.min(window.devicePixelRatio, maxPixelRatio);
+  }
+
+  destroy() {
+    window.removeEventListener('resize', this.handleResize);
   }
 }

@@ -16,11 +16,14 @@ export class MovingLightRig {
 
   private heads: MovingHead[] = [];
   private elapsed = 0;
+  private updateElapsed = 0;
+  private updateInterval = window.matchMedia('(max-width: 768px)').matches ? 1 / 30 : 0;
   private boostTime = 0;
   private worldPosition = new THREE.Vector3();
   private lightOrigin = new THREE.Vector3();
   private targetWorldPosition = new THREE.Vector3();
   private lightDirection = new THREE.Vector3();
+  private upDirection = new THREE.Vector3(0, 1, 0);
 
   constructor() {
     this.group = new THREE.Group();
@@ -137,8 +140,13 @@ export class MovingLightRig {
   }
 
   update(delta: number) {
-    this.boostTime = Math.max(0, this.boostTime - delta);
-    this.elapsed += delta * (this.boostTime > 0 ? 3.2 : 1);
+    this.updateElapsed += delta;
+    if (this.updateElapsed < this.updateInterval) return;
+    const updateDelta = this.updateElapsed;
+    this.updateElapsed = 0;
+
+    this.boostTime = Math.max(0, this.boostTime - updateDelta);
+    this.elapsed += updateDelta * (this.boostTime > 0 ? 3.2 : 1);
 
     this.heads.forEach((head, index) => {
       const movement = (this.elapsed * (0.1 + index * 0.008) + head.phase) % 4;
@@ -177,7 +185,7 @@ export class MovingLightRig {
       const distance = origin.distanceTo(head.target.position);
       head.ray.position.copy(origin).addScaledVector(direction, distance / 2);
       head.ray.scale.set(1, distance, 1);
-      head.ray.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+      head.ray.quaternion.setFromUnitVectors(this.upDirection, direction);
       head.rayMaterial.opacity = 0.13 + Math.sin(this.elapsed * 2.5 + index) * 0.035;
       head.lensMaterial.emissiveIntensity = 2.2 + Math.sin(this.elapsed * 3 + index) * 0.8;
     });

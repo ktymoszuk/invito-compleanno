@@ -14,13 +14,20 @@ export class DiscoBall {
   private wallSpots: WallSpot[] = [];
   private wallSpotMesh: THREE.InstancedMesh;
   private spotTransform = new THREE.Object3D();
-  private reflectionElapsed = 0.25;
+  private reflectionElapsed: number;
+  private spotElapsed = 0;
+  private readonly isMobile = window.matchMedia('(max-width: 768px)').matches;
+  private readonly reflectionInterval: number;
+  private readonly spotUpdateInterval: number;
 
   constructor() {
     this.group = new THREE.Group();
+    this.reflectionInterval = this.isMobile ? 0.5 : 0.25;
+    this.reflectionElapsed = this.reflectionInterval;
+    this.spotUpdateInterval = this.isMobile ? 1 / 30 : 0;
 
     // 1. CUBE CAMERA PER RIFLESSI IN TEMPO REALE
-    this.cubeRenderTarget = new THREE.WebGLCubeRenderTarget(128, {
+    this.cubeRenderTarget = new THREE.WebGLCubeRenderTarget(this.isMobile ? 64 : 128, {
       generateMipmaps: false,
       minFilter: THREE.LinearFilter,
     });
@@ -28,7 +35,7 @@ export class DiscoBall {
 
     // 2. DISCO BALL AD ALTA DENSITÀ
     const radius = 0.68;
-    const ballGeometry = new THREE.SphereGeometry(radius, 96, 48);
+    const ballGeometry = new THREE.SphereGeometry(radius, this.isMobile ? 48 : 96, this.isMobile ? 24 : 48);
     const ballMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       metalness: 1.0,
@@ -99,7 +106,7 @@ export class DiscoBall {
 
   update(delta: number, renderer?: THREE.WebGLRenderer, scene?: THREE.Scene) {
     this.reflectionElapsed += delta;
-    if (renderer && scene && this.reflectionElapsed >= 0.25) {
+    if (renderer && scene && this.reflectionElapsed >= this.reflectionInterval) {
       this.ballMesh.visible = false;
       this.cubeCamera.update(renderer, scene);
       this.ballMesh.visible = true;
@@ -110,6 +117,11 @@ export class DiscoBall {
     const rotationSpeed = 0.3;
     this.ballMesh.rotation.y += delta * rotationSpeed;
 
+    this.spotElapsed += delta;
+    if (this.spotElapsed < this.spotUpdateInterval) return;
+    const spotDelta = this.spotElapsed;
+    this.spotElapsed = 0;
+
     // Dimensioni fisiche della stanza per le collisioni sulle pareti
     const halfW = 4.85;
     const halfD = 4.85;
@@ -118,7 +130,7 @@ export class DiscoBall {
 
     // AGGIORNAMENTO DI TUTTE LE MACCHIE IN UNISONO
     this.wallSpots.forEach((spot, index) => {
-      spot.angle += delta * rotationSpeed;
+      spot.angle += spotDelta * rotationSpeed;
 
       const dirX = Math.sin(spot.angle);
       const dirZ = Math.cos(spot.angle);

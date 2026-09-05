@@ -39,8 +39,8 @@
         title="Apri Bacio che schiocca su Spotify"
         aria-label="Apri Bacio che schiocca su Spotify"
       >
-        <img :src="'/images/bacio_che_schiocca.png'" alt="Copertina di Bacio che schiocca" />
-        <img class="spotify-badge" :src="'/images/spotify.webp'" alt="" aria-hidden="true" />
+        <img :src="'/images/bacio_che_schiocca.webp'" alt="Copertina di Bacio che schiocca" decoding="async" />
+        <img class="spotify-badge" :src="'/images/spotify.webp'" alt="" aria-hidden="true" decoding="async" />
       </a>
       <div class="track-info">
         <strong>Bacio che schiocca</strong>
@@ -150,6 +150,21 @@
                 <p class="subtitle">
                   {{ isAdminAuthenticated ? 'Controlla e aggiorna tutte le richieste.' : 'Le presenze già confermate.' }}
                 </p>
+                <div
+                  class="guest-capacity"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  :aria-valuenow="approvedGuestCount"
+                  :aria-valuemax="guestCapacity"
+                >
+                  <div class="guest-capacity-label">
+                    <span>Approvati</span>
+                    <strong>{{ approvedGuestCount }} / {{ guestCapacity }}</strong>
+                  </div>
+                  <span class="guest-capacity-track" aria-hidden="true">
+                    <span :style="{ width: `${guestCapacityPercentage}%` }"></span>
+                  </span>
+                </div>
               </div>
               <button v-if="isAdminAuthenticated" class="icon-button logout-button" title="Esci" aria-label="Esci" @click="logout">
                 <span class="material-symbols-rounded">logout</span>
@@ -306,6 +321,7 @@ const updatingGuestStatus = ref<1 | 2 | null>(null);
 const guestSearch = ref('');
 const statusFilter = ref<'all' | '0' | '1' | '2'>('all');
 let musicPlayerInactivityTimer: number | null = null;
+const guestCapacity = 300;
 
 const navigationItems: Array<{ id: Section; icon: string; label: string }> = [
   { id: 'info', icon: 'info', label: 'Info' },
@@ -334,6 +350,8 @@ const statusFilters: Array<{ value: 'all' | '0' | '1' | '2'; label: string; icon
 ];
 
 const statusLabel = (status: number) => invitationStatuses.find(item => item.value === status)?.label ?? 'Confermato';
+const approvedGuestCount = computed(() => guests.value.filter(guest => (guest.approved ?? 1) === 1).length);
+const guestCapacityPercentage = computed(() => Math.min(approvedGuestCount.value / guestCapacity * 100, 100));
 
 const filteredGuests = computed(() => {
   const search = guestSearch.value.toLocaleLowerCase('it');
@@ -1159,7 +1177,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   width: min(100%, 560px);
-  max-height: min(82dvh, 720px);
+  max-height: calc(100dvh - 12px);
   padding: 0;
   overflow: hidden;
   color: #f8fbff;
@@ -1491,7 +1509,44 @@ onUnmounted(() => {
 }
 
 .section-heading .subtitle {
-  margin-bottom: 20px;
+  margin-bottom: 7px;
+}
+
+.guest-capacity {
+  width: min(240px, 100%);
+  margin-bottom: 16px;
+}
+
+.guest-capacity-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11px;
+}
+
+.guest-capacity-label strong {
+  color: #67f7e8;
+  font-size: inherit;
+}
+
+.guest-capacity-track,
+.guest-capacity-track > span {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.guest-capacity-track {
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.guest-capacity-track > span {
+  min-width: 0;
+  background: #67f7e8;
+  transition: width 0.35s ease;
 }
 
 .logout-button {
@@ -1639,6 +1694,17 @@ onUnmounted(() => {
 }
 
 @media (max-width: 600px) {
+  .welcome-screen,
+  .music-player,
+  .drawer {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .welcome-screen {
+    background: rgba(10, 12, 20, 0.72);
+  }
+
   .music-player {
     top: 14px;
     right: 14px;
@@ -1651,7 +1717,7 @@ onUnmounted(() => {
   }
 
   .drawer-content {
-    max-height: 88dvh;
+    max-height: calc(100dvh - 6px);
   }
 
   .drawer-body {

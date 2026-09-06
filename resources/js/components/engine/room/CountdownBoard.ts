@@ -13,7 +13,7 @@ export class CountdownBoard {
     this.targetDate = targetDate;
 
     // 1. CANVAS AD ALTA RISOLUZIONE
-    const resolutionScale = window.matchMedia('(max-width: 768px)').matches ? 0.5 : 1;
+    const resolutionScale = 1;
     this.canvas = document.createElement('canvas');
     this.canvas.width = 2048 * resolutionScale;
     this.canvas.height = 512 * resolutionScale;

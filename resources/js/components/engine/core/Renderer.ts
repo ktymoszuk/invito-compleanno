@@ -12,7 +12,7 @@ export class Renderer {
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     this.instance = new THREE.WebGLRenderer({
       alpha: true,
-      antialias: !isMobile,
+      antialias: true,
       powerPreference: 'high-performance',
     });
     this.instance.setSize(this.sizes.width, this.sizes.height);

@@ -23,54 +23,6 @@
       </section>
     </Transition>
 
-    <aside
-      v-if="hasEntered"
-      class="music-player"
-      :class="{ minimized: isMusicPlayerMinimized }"
-      aria-label="Controlli musica"
-      @pointerdown.capture="wakeMusicPlayer"
-      @focusin="wakeMusicPlayer"
-    >
-      <a
-        class="album-link"
-        href="https://www.youtube.com/watch?v=YaC3UY3Dnnk"
-        target="_blank"
-        rel="noopener noreferrer"
-        title="Apri Bacio che schiocca su YouTube"
-        aria-label="Apri Bacio che schiocca su YouTube"
-      >
-        <img :src="'/images/bacio_che_schiocca.webp'" alt="Copertina di Bacio che schiocca" decoding="async" />
-        <span class="youtube-badge" aria-hidden="true"></span>
-      </a>
-      <div class="track-info">
-        <strong>Bacio che schiocca</strong>
-        <span>Marco Rossi</span>
-      </div>
-      <button
-        type="button"
-        class="player-control"
-        :title="isMusicPlaying ? 'Pausa' : 'Riproduci'"
-        :aria-label="isMusicPlaying ? 'Metti in pausa' : 'Riproduci'"
-        @click="toggleMusic"
-      >
-        <span class="material-symbols-rounded">{{ isMusicPlaying ? 'pause' : 'play_arrow' }}</span>
-      </button>
-      <label class="volume-control">
-        <span class="material-symbols-rounded" aria-hidden="true">{{ musicVolume === 0 ? 'volume_off' : 'volume_up' }}</span>
-        <input
-          v-model.number="musicVolume"
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          aria-label="Volume musica"
-          :style="{ '--volume-level': `${musicVolume}%` }"
-          @input="changeMusicVolume"
-        />
-        <output>{{ musicVolume }}%</output>
-      </label>
-    </aside>
-
     <button
       id="info-btn"
       class="party-btn"
@@ -103,11 +55,25 @@
               </div>
             </div>
 
+            <div class="party-preview">
+              <div class="party-preview-heading">
+                <span class="material-symbols-rounded" aria-hidden="true">movie</span>
+                <strong>Non sarà solo disco...</strong>
+              </div>
+              <p>Durante la festa verrà registrato il video della canzone <strong>“Bacio che schiocca”</strong>. Ascoltatela per caricarci!</p>
+              <p>Qualcuno di noi forse si esibirà con un mini concerto.</p>
+            </div>
+
             <div class="party-theme-note">
               <span class="material-symbols-rounded" aria-hidden="true">checkroom</span>
-              <div>
+              <div class="party-theme-content">
                 <small>DRESS CODE</small>
-                <strong>Festa a tema anni '80</strong>
+                <strong>Scegli uno dei tre temi anni '70-'80</strong>
+                <ol>
+                  <li>Disco music</li>
+                  <li>Paninaro-metallaro</li>
+                  <li>Personaggi di fantascienza dei film anni '80-'90</li>
+                </ol>
               </div>
             </div>
  
@@ -469,10 +435,6 @@ const canvasContainer = ref<HTMLDivElement | null>(null);
 let engine: RoomEngine | null = null;
 
 const showWelcome = ref(true);
-const hasEntered = ref(false);
-const isMusicPlaying = ref(false);
-const isMusicPlayerMinimized = ref(false);
-const musicVolume = ref(50);
 const isOpen = ref(false);
 const activeSection = ref<Section>('info');
 const showSuccess = ref(false);
@@ -503,7 +465,6 @@ const isSavingProgram = ref(false);
 const isReorderingProgram = ref(false);
 const newProgramTime = ref('');
 const newProgramDescription = ref('');
-let musicPlayerInactivityTimer: number | null = null;
 let registrationTransitionTimer: number | null = null;
 let copiedIbanTimer: number | null = null;
 const guestCapacity = 300;
@@ -580,31 +541,8 @@ const openDrawer = () => {
   isOpen.value = true;
 };
 
-const scheduleMusicPlayerMinimize = () => {
-  if (musicPlayerInactivityTimer !== null) window.clearTimeout(musicPlayerInactivityTimer);
-  musicPlayerInactivityTimer = window.setTimeout(() => {
-    isMusicPlayerMinimized.value = true;
-    musicPlayerInactivityTimer = null;
-  }, 10000);
-};
-
-const wakeMusicPlayer = () => {
-  isMusicPlayerMinimized.value = false;
-  scheduleMusicPlayerMinimize();
-};
-
 const enterParty = () => {
   showWelcome.value = false;
-  hasEntered.value = true;
-  scheduleMusicPlayerMinimize();
-};
-
-const toggleMusic = () => {
-  engine?.toggleMusic();
-};
-
-const changeMusicVolume = () => {
-  engine?.setMusicVolume(musicVolume.value / 100);
 };
 
 const closeDrawer = () => {
@@ -872,14 +810,10 @@ const updateGuestStatus = async (guest: Guest, approved: 0 | 1 | 2) => {
 onMounted(() => {
   if (canvasContainer.value) {
     engine = new RoomEngine(canvasContainer.value);
-    engine.onMusicStateChange(playing => {
-      isMusicPlaying.value = playing;
-    });
   }
 });
 
 onUnmounted(() => {
-  if (musicPlayerInactivityTimer !== null) window.clearTimeout(musicPlayerInactivityTimer);
   if (registrationTransitionTimer !== null) window.clearTimeout(registrationTransitionTimer);
   if (copiedIbanTimer !== null) window.clearTimeout(copiedIbanTimer);
   engine?.destroy();
@@ -888,9 +822,12 @@ onUnmounted(() => {
 
 <style scoped>
 .room-container {
+  position: fixed;
+  inset: 0;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  background: #0a0a12;
 }
 
 .welcome-screen {
@@ -1032,218 +969,6 @@ onUnmounted(() => {
 
 .welcome-leave-to .welcome-content {
   transform: scale(1.04);
-}
-
-.music-player {
-  position: fixed;
-  top: 22px;
-  right: 22px;
-  z-index: 120;
-  display: grid;
-  grid-template-columns: 58px minmax(120px, 1fr) 46px;
-  grid-template-rows: 42px 18px;
-  grid-template-areas:
-    'cover info play'
-    'cover volume volume';
-  align-items: center;
-  column-gap: 12px;
-  row-gap: 7px;
-  width: min(390px, calc(100vw - 44px));
-  height: 89px;
-  padding: 10px;
-  box-sizing: border-box;
-  overflow: hidden;
-  background: rgba(15, 18, 17, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
-  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.42);
-  color: #ffffff;
-  font-family: 'Courier New', monospace;
-  backdrop-filter: blur(18px) saturate(130%);
-  -webkit-backdrop-filter: blur(18px) saturate(130%);
-  transition:
-    width 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    height 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    padding 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    column-gap 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    row-gap 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    grid-template-columns 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    grid-template-rows 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.48s ease;
-}
-
-.music-player.minimized {
-  grid-template-columns: 46px 0fr 42px;
-  grid-template-rows: 46px 0;
-  column-gap: 8px;
-  row-gap: 0;
-  width: 114px;
-  height: 64px;
-  padding: 8px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.36);
-}
-
-.music-player.minimized .album-link {
-  width: 46px;
-  height: 46px;
-}
-
-.music-player.minimized .track-info,
-.music-player.minimized .volume-control {
-  visibility: hidden;
-  opacity: 0;
-  transform: translateX(12px);
-  pointer-events: none;
-}
-
-.album-link {
-  position: relative;
-  grid-area: cover;
-  width: 58px;
-  height: 58px;
-  border-radius: 4px;
-}
-
-.album-link > img:first-child {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.album-link::after {
-  position: absolute;
-  bottom: -4px;
-  left: -4px;
-  z-index: 1;
-  width: 26px;
-  height: 26px;
-  background: #ff0033;
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
-  content: '';
-  transition: opacity 0.2s ease, transform 0.4s ease, visibility 0.2s;
-}
-
-.youtube-badge {
-  position: absolute;
-  bottom: -4px;
-  left: -4px;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  transition: opacity 0.2s ease, transform 0.4s ease, visibility 0.2s;
-}
-
-.youtube-badge::before {
-  width: 0;
-  height: 0;
-  margin-left: 2px;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  border-left: 10px solid #ffffff;
-  content: '';
-}
-
-.music-player.minimized .youtube-badge,
-.music-player.minimized .album-link::after {
-  visibility: hidden;
-  opacity: 0;
-  transform: scale(0.6);
-}
-
-.track-info {
-  grid-area: info;
-  min-width: 0;
-  transition: opacity 0.2s ease, transform 0.4s ease, visibility 0.2s;
-}
-
-.track-info strong,
-.track-info span {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.track-info strong {
-  color: #67f7e8;
-  font-size: 14px;
-}
-
-.track-info span {
-  margin-top: 2px;
-  color: rgba(255, 255, 255, 0.66);
-  font-size: 11px;
-}
-
-.player-control {
-  grid-area: play;
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  padding: 0;
-  background: #67f7e8;
-  border: 0;
-  border-radius: 50%;
-  color: #07120b;
-  cursor: pointer;
-}
-
-.player-control .material-symbols-rounded {
-  font-size: 28px;
-}
-
-.volume-control {
-  grid-area: volume;
-  display: grid;
-  grid-template-columns: 20px minmax(70px, 1fr) 38px;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  transition: opacity 0.2s ease, transform 0.4s ease, visibility 0.2s;
-}
-
-.volume-control .material-symbols-rounded {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 18px;
-}
-
-.volume-control input {
-  width: 100%;
-  height: 4px;
-  margin: 0;
-  appearance: none;
-  background: linear-gradient(to right, #67f7e8 var(--volume-level), rgba(255, 255, 255, 0.3) var(--volume-level));
-  border-radius: 2px;
-  cursor: pointer;
-}
-
-.volume-control input::-webkit-slider-thumb {
-  width: 14px;
-  height: 14px;
-  appearance: none;
-  background: #ffffff;
-  border: 0;
-  border-radius: 50%;
-}
-
-.volume-control input::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  background: #ffffff;
-  border: 0;
-  border-radius: 50%;
-}
-
-.volume-control output {
-  color: rgba(255, 255, 255, 0.66);
-  font-size: 11px;
-  text-align: right;
 }
 
 @keyframes globe-float {
@@ -1823,6 +1548,33 @@ onUnmounted(() => {
   border-radius: 6px;
 }
 
+.party-preview {
+  margin-bottom: 12px;
+  padding: 14px;
+  background: rgba(103, 247, 232, 0.08);
+  border: 1px solid rgba(103, 247, 232, 0.32);
+  border-radius: 6px;
+}
+
+.party-preview-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+  color: #67f7e8;
+}
+
+.party-preview-heading .material-symbols-rounded {
+  font-size: 25px;
+}
+
+.party-preview p {
+  margin: 7px 0 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .party-theme-note > .material-symbols-rounded {
   color: #ffd84d;
   font-size: 28px;
@@ -1844,6 +1596,16 @@ onUnmounted(() => {
   color: #ffffff;
   font-size: 14px;
   line-height: 1.35;
+}
+
+.party-theme-content ol {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0 0;
+  padding-left: 20px;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .donation-button {
@@ -2378,7 +2140,6 @@ onUnmounted(() => {
 
 @media (max-width: 600px) {
   .welcome-screen,
-  .music-player,
   .drawer {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -2386,17 +2147,6 @@ onUnmounted(() => {
 
   .welcome-screen {
     background: rgba(10, 12, 20, 0.72);
-  }
-
-  .music-player {
-    top: 14px;
-    right: 14px;
-    width: calc(100vw - 28px);
-  }
-
-  .music-player.minimized {
-    right: 14px;
-    width: 114px;
   }
 
   .drawer-content {

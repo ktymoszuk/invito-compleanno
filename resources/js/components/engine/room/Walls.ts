@@ -13,11 +13,30 @@ export class Walls {
       metalness: 0.1,
     });
 
-    // Parete Posteriore
-    const backGeo = new THREE.PlaneGeometry(width, height);
-    const backWall = new THREE.Mesh(backGeo, material);
-    backWall.position.set(0, height / 2, -depth / 2);
-    backWall.receiveShadow = true;
+    // Parete posteriore con vano centrale per il player YouTube 16:9.
+    const screenWidth = 6.2;
+    const screenHeight = 3.5;
+    const screenCenterX = -0.65;
+    const screenCenterY = height / 2;
+    const screenLeft = screenCenterX - screenWidth / 2;
+    const screenRight = screenCenterX + screenWidth / 2;
+    const leftWidth = screenLeft + width / 2;
+    const rightWidth = width / 2 - screenRight;
+    const bottomHeight = screenCenterY - screenHeight / 2;
+    const topHeight = height - (screenCenterY + screenHeight / 2);
+    const backPanels = [
+      { width: leftWidth, height, x: -width / 2 + leftWidth / 2, y: height / 2 },
+      { width: rightWidth, height, x: screenRight + rightWidth / 2, y: height / 2 },
+      { width: screenWidth, height: bottomHeight, x: screenCenterX, y: bottomHeight / 2 },
+      { width: screenWidth, height: topHeight, x: screenCenterX, y: height - topHeight / 2 },
+    ];
+
+    const backWalls = backPanels.map(panel => {
+      const wall = new THREE.Mesh(new THREE.PlaneGeometry(panel.width, panel.height), material);
+      wall.position.set(panel.x, panel.y, -depth / 2);
+      wall.receiveShadow = true;
+      return wall;
+    });
 
     // Parete Sinistra
     const leftGeo = new THREE.PlaneGeometry(depth, height);
@@ -40,6 +59,6 @@ export class Walls {
     frontWall.position.set(0, height / 2, depth / 2);
     frontWall.receiveShadow = true;
 
-    this.group.add(backWall, leftWall, rightWall, frontWall);
+    this.group.add(...backWalls, leftWall, rightWall, frontWall);
   }
 }

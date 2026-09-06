@@ -6,6 +6,7 @@ import { Renderer } from './core/Renderer';
 import { Room } from './room/Room';
 import { DiscoBall } from './disco/DiscoBall';
 import { Lighting } from './lighting/Lighting';
+import { YouTubeWallPlayer } from './room/YouTubeWallPlayer';
 
 export class RoomEngine {
   sizes: Sizes;
@@ -15,14 +16,11 @@ export class RoomEngine {
   room: Room;
   discoBall: DiscoBall;
   lighting: Lighting;
+  youtubeWallPlayer: YouTubeWallPlayer;
   
   private clock: THREE.Clock;
   private reqId: number = 0;
-  private music: HTMLAudioElement | null = null;
-  private musicVolume = 0.4;
   private scratchResetTimer: number | null = null;
-  private volumeFadeId: number | null = null;
-  private musicStateListener: ((playing: boolean) => void) | null = null;
   private running = true;
 
   constructor(container: HTMLElement) {
@@ -47,6 +45,7 @@ export class RoomEngine {
     this.camera.addInteraction(this.room.birthdayCake.group, () => this.room.celebrateCake());
     this.discoBall = new DiscoBall();
     this.lighting = new Lighting();
+    this.youtubeWallPlayer = new YouTubeWallPlayer(this.sizes, container);
 
     // Add to Scene
     this.scene.instance.add(
@@ -69,75 +68,11 @@ export class RoomEngine {
     }
   }
 
-  async startMusicWithFade() {
-    if (this.volumeFadeId !== null) cancelAnimationFrame(this.volumeFadeId);
-    const music = this.getMusic();
-    music.volume = 0;
-
-    try {
-      await music.play();
-      this.setMusicVisuals(true);
-      const startedAt = performance.now();
-      const fade = (now: number) => {
-        const progress = Math.min((now - startedAt) / 2000, 1);
-        music.volume = progress * this.musicVolume;
-        if (progress < 1) this.volumeFadeId = requestAnimationFrame(fade);
-        else this.volumeFadeId = null;
-      };
-      this.volumeFadeId = requestAnimationFrame(fade);
-    } catch {
-      this.setMusicVisuals(false);
-    }
-  }
-
-  toggleMusic() {
-    const music = this.getMusic();
-    if (music.paused) {
-      void music.play()
-        .then(() => this.setMusicVisuals(true))
-        .catch(() => this.setMusicVisuals(false));
-      return;
-    }
-
-    music.pause();
-    this.setMusicVisuals(false);
-  }
-
-  setMusicVolume(volume: number) {
-    if (this.volumeFadeId !== null) {
-      cancelAnimationFrame(this.volumeFadeId);
-      this.volumeFadeId = null;
-    }
-    this.musicVolume = Math.min(Math.max(volume, 0), 1);
-    if (this.music) this.music.volume = this.musicVolume;
-  }
-
-  onMusicStateChange(listener: (playing: boolean) => void) {
-    this.musicStateListener = listener;
-  }
-
-  private setMusicVisuals(playing: boolean) {
-    this.room.djConsole.setPlaying(playing);
-    this.room.robotDJ.setPlaying(playing);
-    this.musicStateListener?.(playing);
-  }
-
-  private getMusic() {
-    if (!this.music) {
-      this.music = new Audio('/music/bacio-che-schiocca.mp3');
-      this.music.loop = true;
-      this.music.volume = this.musicVolume;
-    }
-    return this.music;
-  }
-
   private scratch() {
     this.room.djConsole.scratch();
     this.room.movingLightRig.boost();
-    if (this.music && !this.music.paused) this.music.playbackRate = 1.35;
     if (this.scratchResetTimer !== null) window.clearTimeout(this.scratchResetTimer);
     this.scratchResetTimer = window.setTimeout(() => {
-      if (this.music) this.music.playbackRate = 1;
       this.scratchResetTimer = null;
     }, 1100);
   }
@@ -145,6 +80,7 @@ export class RoomEngine {
   private resize() {
     this.camera.resize();
     this.renderer.resize();
+    this.youtubeWallPlayer.resize();
   }
 
   private handleVisibilityChange = () => {
@@ -174,6 +110,7 @@ export class RoomEngine {
 
     // Render
     this.renderer.render(this.scene.instance, this.camera.instance);
+    this.youtubeWallPlayer.render(this.camera.instance);
 
     this.reqId = requestAnimationFrame(this.loop);
   };
@@ -184,10 +121,8 @@ export class RoomEngine {
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     this.camera.destroy();
     this.sizes.destroy();
-    this.music?.pause();
-    if (this.music) this.music.src = '';
-    if (this.volumeFadeId !== null) cancelAnimationFrame(this.volumeFadeId);
     if (this.scratchResetTimer !== null) window.clearTimeout(this.scratchResetTimer);
+    this.youtubeWallPlayer.destroy();
     this.renderer.instance.dispose();
     this.renderer.instance.domElement.remove();
   }

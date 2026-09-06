@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-type WallSide = 'back' | 'front' | 'right';
+type WallSide = 'back' | 'front' | 'left' | 'right';
 
 export class VinylWall {
   group: THREE.Group;
@@ -19,9 +19,9 @@ export class VinylWall {
     const labelColors = [0xff4f9a, 0x67f7e8, 0xffd84d, 0xff5b2e, 0x8f6bff, 0x65ff75];
 
     const records = [
-      { position: [-3.55, 3.58, -4.82], rotation: [Math.PI / 2, 0, 0], wall: 'back' as const },
-      { position: [-2.7, 4.1, -4.82], rotation: [Math.PI / 2, 0, 0], wall: 'back' as const },
-      { position: [2.35, 3.72, -4.82], rotation: [Math.PI / 2, 0, 0], wall: 'back' as const },
+      { position: [-4.82, 3.75, -0.25], rotation: [0, 0, -Math.PI / 2], wall: 'left' as const },
+      { position: [-4.82, 4.25, 1.25], rotation: [0, 0, -Math.PI / 2], wall: 'left' as const },
+      { position: [-4.82, 3.75, 2.75], rotation: [0, 0, -Math.PI / 2], wall: 'left' as const },
       { position: [4.82, 3.82, -1.45], rotation: [0, 0, Math.PI / 2], wall: 'right' as const },
       { position: [4.82, 4.22, -0.48], rotation: [0, 0, Math.PI / 2], wall: 'right' as const },
       { position: [4.82, 3.5, 0.42], rotation: [0, 0, Math.PI / 2], wall: 'right' as const },
@@ -55,6 +55,7 @@ export class VinylWall {
     this.wallRecords.forEach(({ group, wall }) => {
       if (wall === 'back') group.visible = cameraPosition.z > -4.82;
       if (wall === 'front') group.visible = cameraPosition.z < 4.78;
+      if (wall === 'left') group.visible = cameraPosition.x > -4.82;
       if (wall === 'right') group.visible = cameraPosition.x < 4.82;
     });
   }

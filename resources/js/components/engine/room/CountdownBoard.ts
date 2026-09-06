@@ -24,8 +24,8 @@ export class CountdownBoard {
     this.texture.minFilter = THREE.LinearFilter;
 
     // 2. STRUTTURA 3D DEL TABELLONE
-    const boardW = 4.8;
-    const boardH = 1.3;
+    const boardW = 3.6;
+    const boardH = 1;
 
     // Cornice scura metallica
     const frameGeo = new THREE.BoxGeometry(boardW, boardH, 0.1);
@@ -58,8 +58,9 @@ export class CountdownBoard {
 
     this.group.add(frame, neonBorder, screen);
 
-    // Posizionamento sulla parete
-    this.group.position.set(-1.6, 2.3, -4.85);
+    // Sulla parete destra, sopra la torta
+    this.group.position.set(4.85, 2.95, 1.45);
+    this.group.rotation.y = -Math.PI / 2;
 
     // Primo disegno iniziale
     this.updateText();
@@ -141,6 +142,6 @@ export class CountdownBoard {
   }
 
   updateVisibility(cameraPosition: THREE.Vector3) {
-    this.group.visible = cameraPosition.z > -4.85;
+    this.group.visible = cameraPosition.x < 4.85;
   }
 }

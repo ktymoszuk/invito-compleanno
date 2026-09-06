@@ -19,12 +19,13 @@ export class DiscoBall {
   private readonly isMobile = window.matchMedia('(max-width: 768px)').matches;
   private readonly reflectionInterval: number;
   private readonly spotUpdateInterval: number;
+  private reflectionCaptured = false;
 
   constructor() {
     this.group = new THREE.Group();
-    this.reflectionInterval = this.isMobile ? 0.5 : 0.25;
+    this.reflectionInterval = 0.25;
     this.reflectionElapsed = this.reflectionInterval;
-    this.spotUpdateInterval = this.isMobile ? 1 / 30 : 0;
+    this.spotUpdateInterval = this.isMobile ? 1 / 20 : 0;
 
     // 1. CUBE CAMERA PER RIFLESSI IN TEMPO REALE
     this.cubeRenderTarget = new THREE.WebGLCubeRenderTarget(this.isMobile ? 64 : 128, {
@@ -81,8 +82,10 @@ export class DiscoBall {
     });
 
     // 4. RIFLESSI DISPOSTI IN FASCE REGOLARI COME LE TESSERE DELLA SFERA
-    const latitudeBands = [-1.45, -1.2, -1, -0.82, -0.64, -0.48, -0.32, -0.16, 0.16, 0.34, 0.54, 0.76];
-    const spotsPerBand = 32;
+    const latitudeBands = this.isMobile
+      ? [-1.35, -1, -0.68, -0.36, 0.2, 0.58, 0.92, 1.25]
+      : [-1.45, -1.2, -1, -0.82, -0.64, -0.48, -0.32, -0.16, 0.16, 0.34, 0.54, 0.76];
+    const spotsPerBand = this.isMobile ? 16 : 32;
     this.wallSpotMesh = new THREE.InstancedMesh(spotGeo, spotMat, latitudeBands.length * spotsPerBand);
     this.wallSpotMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.wallSpotMesh.frustumCulled = false;
@@ -106,11 +109,13 @@ export class DiscoBall {
 
   update(delta: number, renderer?: THREE.WebGLRenderer, scene?: THREE.Scene) {
     this.reflectionElapsed += delta;
-    if (renderer && scene && this.reflectionElapsed >= this.reflectionInterval) {
+    const shouldUpdateReflection = !this.isMobile || !this.reflectionCaptured;
+    if (renderer && scene && shouldUpdateReflection && this.reflectionElapsed >= this.reflectionInterval) {
       this.ballMesh.visible = false;
       this.cubeCamera.update(renderer, scene);
       this.ballMesh.visible = true;
       this.reflectionElapsed = 0;
+      this.reflectionCaptured = true;
     }
 
     // Velocità di rotazione coerente della palla

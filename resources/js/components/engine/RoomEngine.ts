@@ -22,6 +22,8 @@ export class RoomEngine {
   private reqId: number = 0;
   private scratchResetTimer: number | null = null;
   private running = true;
+  private readonly frameInterval = window.matchMedia('(max-width: 768px)').matches ? 1000 / 30 : 0;
+  private lastFrameTime = 0;
 
   constructor(container: HTMLElement) {
     this.clock = new THREE.Clock();
@@ -68,6 +70,10 @@ export class RoomEngine {
     }
   }
 
+  activateYouTubePlayer() {
+    this.youtubeWallPlayer.activate();
+  }
+
   private scratch() {
     this.room.djConsole.scratch();
     this.room.movingLightRig.boost();
@@ -97,7 +103,12 @@ export class RoomEngine {
     }
   };
 
-  private loop = () => {
+  private loop = (frameTime = 0) => {
+    if (this.frameInterval && frameTime - this.lastFrameTime < this.frameInterval) {
+      this.reqId = requestAnimationFrame(this.loop);
+      return;
+    }
+    this.lastFrameTime = frameTime;
     const delta = this.clock.getDelta();
 
     // Passiamo renderer e scene per aggiornare i riflessi a specchio della palla

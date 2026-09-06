@@ -15,6 +15,7 @@ export class Camera {
   private initialTarget = new THREE.Vector3(1.2, 1.35, -2.5);
   
   private fallbackAngle = 0;
+  private readonly isMobile = window.matchMedia('(max-width: 768px)').matches;
   private lastUserInteraction = 0;
   private isUserInteracting = false;
   private navigationRoot: THREE.Object3D | null = null;
@@ -161,7 +162,8 @@ export class Camera {
       }
     }
     
-    const shouldAutoMove = timeSinceInteraction > 3000
+    const shouldAutoMove = !this.isMobile
+      && timeSinceInteraction > 3000
       && !this.isUserInteracting
       && !this.navigationTarget;
 

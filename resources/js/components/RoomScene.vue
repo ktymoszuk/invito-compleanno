@@ -543,6 +543,7 @@ const openDrawer = () => {
 
 const enterParty = () => {
   showWelcome.value = false;
+  engine?.activateYouTubePlayer();
 };
 
 const closeDrawer = () => {

@@ -20,7 +20,6 @@ export class YouTubeWallPlayer {
       width: '480px',
       height: '270px',
       boxSizing: 'border-box',
-      contain: 'strict',
       overflow: 'hidden',
       background: '#000000',
       border: '4px solid #09090d',
@@ -51,10 +50,14 @@ export class YouTubeWallPlayer {
     this.activated = true;
 
     const iframe = document.createElement('iframe');
-    iframe.src = 'https://www.youtube.com/embed/YaC3UY3Dnnk?playsinline=1&rel=0';
+  const embedUrl = new URL('https://www.youtube.com/embed/YaC3UY3Dnnk');
+  embedUrl.searchParams.set('playsinline', '1');
+  embedUrl.searchParams.set('rel', '0');
+  embedUrl.searchParams.set('origin', window.location.origin);
+  iframe.src = embedUrl.toString();
     iframe.title = 'Bacio che schiocca - player ufficiale YouTube';
     iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+    iframe.referrerPolicy = 'origin';
     iframe.allowFullscreen = true;
     iframe.setAttribute('frameborder', '0');
     Object.assign(iframe.style, {

@@ -82,8 +82,10 @@ export class DiscoBall {
     });
 
     // 4. RIFLESSI DISPOSTI IN FASCE REGOLARI COME LE TESSERE DELLA SFERA
-    const latitudeBands = [-1.45, -1.2, -1, -0.82, -0.64, -0.48, -0.32, -0.16, 0.16, 0.34, 0.54, 0.76];
-    const spotsPerBand = 32;
+    const latitudeBands = this.isMobile
+      ? [-1.35, -1, -0.68, -0.36, 0.2, 0.58, 0.92, 1.25]
+      : [-1.45, -1.2, -1, -0.82, -0.64, -0.48, -0.32, -0.16, 0.16, 0.34, 0.54, 0.76];
+    const spotsPerBand = this.isMobile ? 16 : 32;
     this.wallSpotMesh = new THREE.InstancedMesh(spotGeo, spotMat, latitudeBands.length * spotsPerBand);
     this.wallSpotMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.wallSpotMesh.frustumCulled = false;

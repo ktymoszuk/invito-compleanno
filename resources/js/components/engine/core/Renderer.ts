@@ -37,6 +37,10 @@ export class Renderer {
     this.instance.setPixelRatio(this.sizes.pixelRatio);
   }
 
+  setPixelRatio(pixelRatio: number) {
+    this.instance.setPixelRatio(pixelRatio);
+  }
+
   render(scene: THREE.Scene, camera: THREE.Camera) {
     this.instance.render(scene, camera);
   }

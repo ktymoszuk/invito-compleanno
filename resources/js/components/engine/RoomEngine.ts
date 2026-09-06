@@ -22,8 +22,10 @@ export class RoomEngine {
   private reqId: number = 0;
   private scratchResetTimer: number | null = null;
   private running = true;
+  private readonly isMobile = window.matchMedia('(max-width: 768px)').matches;
   private readonly frameInterval = window.matchMedia('(max-width: 768px)').matches ? 1000 / 30 : 0;
   private lastFrameTime = 0;
+  private qualityRestoreTimer: number | null = null;
 
   constructor(container: HTMLElement) {
     this.clock = new THREE.Clock();
@@ -58,6 +60,11 @@ export class RoomEngine {
 
     this.sizes.addEventListener('resize', () => this.resize());
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
+    if (this.isMobile) {
+      window.addEventListener('pointerdown', this.lowerQualityWhileMoving, { passive: true });
+      window.addEventListener('pointerup', this.scheduleQualityRestore, { passive: true });
+      window.addEventListener('pointercancel', this.scheduleQualityRestore, { passive: true });
+    }
     
     // Loop
     this.loop();
@@ -88,6 +95,19 @@ export class RoomEngine {
     this.renderer.resize();
     this.youtubeWallPlayer.resize();
   }
+
+  private lowerQualityWhileMoving = () => {
+    if (this.qualityRestoreTimer !== null) window.clearTimeout(this.qualityRestoreTimer);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  };
+
+  private scheduleQualityRestore = () => {
+    if (this.qualityRestoreTimer !== null) window.clearTimeout(this.qualityRestoreTimer);
+    this.qualityRestoreTimer = window.setTimeout(() => {
+      this.renderer.setPixelRatio(this.sizes.pixelRatio);
+      this.qualityRestoreTimer = null;
+    }, 180);
+  };
 
   private handleVisibilityChange = () => {
     if (document.hidden) {
@@ -130,9 +150,13 @@ export class RoomEngine {
     this.running = false;
     cancelAnimationFrame(this.reqId);
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    window.removeEventListener('pointerdown', this.lowerQualityWhileMoving);
+    window.removeEventListener('pointerup', this.scheduleQualityRestore);
+    window.removeEventListener('pointercancel', this.scheduleQualityRestore);
     this.camera.destroy();
     this.sizes.destroy();
     if (this.scratchResetTimer !== null) window.clearTimeout(this.scratchResetTimer);
+    if (this.qualityRestoreTimer !== null) window.clearTimeout(this.qualityRestoreTimer);
     this.youtubeWallPlayer.destroy();
     this.renderer.instance.dispose();
     this.renderer.instance.domElement.remove();

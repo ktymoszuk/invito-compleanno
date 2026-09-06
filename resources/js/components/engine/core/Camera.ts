@@ -84,7 +84,7 @@ export class Camera {
 
   private setControls() {
     this.controls = new OrbitControls(this.instance, this.domElement);
-    this.controls.enableDamping = true;
+    this.controls.enableDamping = !this.isMobile;
     this.controls.dampingFactor = 0.05;
     this.controls.enablePan = true;
     this.controls.panSpeed = 0.72;

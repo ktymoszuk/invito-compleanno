@@ -55,20 +55,20 @@
               </div>
             </div>
 
-            <div class="party-preview">
+            <!-- <div class="party-preview">
               <div class="party-preview-heading">
                 <span class="material-symbols-rounded" aria-hidden="true">movie</span>
                 <strong>Non sarà solo disco...</strong>
               </div>
               <p>Durante la festa verrà registrato il video della canzone <strong>“Bacio che schiocca”</strong>. Ascoltatela per caricarci!</p>
               <p>Qualcuno di noi forse si esibirà con un mini concerto.</p>
-            </div>
+            </div> -->
 
             <div class="party-theme-note">
               <span class="material-symbols-rounded" aria-hidden="true">checkroom</span>
               <div class="party-theme-content">
                 <small>DRESS CODE</small>
-                <strong>Scegli uno dei tre temi anni '70-'80</strong>
+                <strong>Scegli uno dei tre temi anni '70-'80-'90</strong>
                 <ol>
                   <li>Disco music</li>
                   <li>Paninaro-metallaro</li>

@@ -1231,7 +1231,7 @@ onUnmounted(() => {
 /* Glass drawer */
 .drawer {
   bottom: -100dvh;
-  background: rgba(10, 12, 20, 0.52);
+  background: rgba(10, 12, 20, 0.88);
   border-top: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 8px 8px 0 0;
   box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.42);
@@ -2095,7 +2095,7 @@ onUnmounted(() => {
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
   padding: 10px max(18px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom));
-  background: rgba(5, 7, 12, 0.58);
+  background: rgba(5, 7, 12, 0.9);
   border-top: 1px solid rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -2148,6 +2148,10 @@ onUnmounted(() => {
 
   .welcome-screen {
     background: rgba(10, 12, 20, 0.72);
+  }
+
+  .drawer {
+    background: rgba(10, 12, 20, 0.94);
   }
 
   .drawer-content {
